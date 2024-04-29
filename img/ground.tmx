@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="150" height="20" tilewidth="16" tileheight="16" nextobjectid="1">
+ <tileset firstgid="1" name="1" tilewidth="16" tileheight="16">
+  <image source="../tiles/Seasonal platformer tiles.png" trans="ff00ff" width="464" height="432"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="150" height="20">
+  <data encoding="base64" compression="zlib">
+   eJztwzENAAAIA7D5V4gRfkzAQ9qkCQAAAAAAAAAA/Fd6sFVVXT0R/7zn
+  </data>
+ </layer>
+</map>

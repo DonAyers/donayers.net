@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="150" height="20" tilewidth="16" tileheight="16" nextobjectid="1">
+ <tileset firstgid="1" name="Seasonal platformer tiles" tilewidth="16" tileheight="16">
+  <image source="../tiles/Seasonal platformer tiles.png" trans="ff00ff" width="464" height="432"/>
+ </tileset>
+ <layer name="Tile Layer 1" width="150" height="20">
+  <data encoding="base64" compression="zlib">
+   eJzty9VRhGEUg+GfK2yRDpDFisClCNhlFygClyJwKQKXInApApcGeCs4k0vmI5l5bjJJljmO4ziO4ziO4ziO4zjO300TmtGCVuTRhnZ0oBNdQa/+vUtjp/660YNe9KEfAxjEEIYxEvTq37s0dupvFGMooIhxlFDGBCYxFfTq37s0dupvGjOYxRzmsYBFLGEZK0Gv/r1LY6f+VrGGdWxgE1vYxg52sRf06t+7NHbqbx8HOMQRjnGCU5zhHBdBr/69S2On/i5xhWvc4BZ3uMcDHvEU9OrfuzR26u8ZL3jFG97xgU984Rs/Qa/+vUtjp/4qK7KsCtWoQS1yqEM9GtAY9OrfuzR26s9xHMdx/nN+AT/iiaI=
+  </data>
+ </layer>
+</map>
