@@ -495,7 +495,9 @@ $(document).ready(function() {
             if (!movedOnce) {
                 //moveBg();
                 //console.log("not moved once");
-                $('.dialog').html("<div>Thats the ticket</div><br><div>The Don lives high up in the clouds. They say you can see him up there when the moons are aligned, But Ill let you be the judge of that.</div><br><div>Activate my jumpjets by pressing up <img class='upArrow' src='img/uparrow.png'/> or clicking on me</div>");
+                $('.dialog').html(
+                    "<div>Thats the ticket</div><br><div>The Don lives high up in the clouds. They say you can see him up there when the moons are aligned, But I'll let you be the judge of that.</div><br><div>Activate my jumpjets by pressing up <img class='upArrow' src='img/uparrow.png'/> or clicking on me</div>",
+                );
                 $('.dialog div').velocity("transition.slideLeftIn", {
                     //stagger: 500,
                     complete: function() {
