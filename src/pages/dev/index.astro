@@ -1,0 +1,150 @@
+---
+import { getCollection } from 'astro:content';
+import '../../styles/global.css';
+
+const devProjects = await getCollection('dev');
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Dev Projects - Don Ayers</title>
+	</head>
+	<body class="grid-bg">
+		<div class="wrapper">
+			<nav class="top-nav">
+				<a href="/">HOME</a>
+				<span>//</span>
+				<a href="/music">MUSIC</a>
+				<span>//</span>
+				<a href="/dev" class="active">DEV</a>
+			</nav>
+
+			<h1>DEV PROJECTS</h1>
+			<div class="line"></div>
+
+			<div class="projects">
+				{devProjects.map((project) => (
+					<article class="project-card cyber-border">
+						<h3>{project.data.title}</h3>
+						{project.data.tech && (
+							<p class="tech">
+								{project.data.tech.join(' / ')}
+							</p>
+						)}
+						{project.data.description && (
+							<p class="description">{project.data.description}</p>
+						)}
+						<div class="links">
+							{project.data.githubUrl && (
+								<a href={project.data.githubUrl} target="_blank" rel="noopener noreferrer">
+									GitHub →
+								</a>
+							)}
+							{project.data.liveUrl && (
+								<a href={project.data.liveUrl} target="_blank" rel="noopener noreferrer">
+									Live Demo →
+								</a>
+							)}
+							<a href={`/dev/${project.id}`}>
+								Details →
+							</a>
+						</div>
+					</article>
+				))}
+			</div>
+		</div>
+
+		<style>
+			.wrapper {
+				max-width: 900px;
+				margin: 0 auto;
+				padding: 40px 20px;
+				min-height: 100vh;
+			}
+
+			.top-nav {
+				display: flex;
+				gap: 1rem;
+				margin-bottom: 3rem;
+				font-family: 'Orbitron', sans-serif;
+				font-size: 0.9rem;
+				letter-spacing: 0.15em;
+			}
+
+			.top-nav a {
+				color: var(--cyber-blue);
+				opacity: 0.6;
+			}
+
+			.top-nav a.active {
+				opacity: 1;
+				text-shadow: 0 0 10px var(--cyber-blue);
+			}
+
+			.top-nav span {
+				color: var(--cyber-purple);
+				opacity: 0.3;
+			}
+
+			.line {
+				height: 2px;
+				background: var(--cyber-blue);
+				margin: 2rem 0 3rem;
+				max-width: 400px;
+				box-shadow: 0 0 10px var(--cyber-blue);
+			}
+
+			.projects {
+				display: grid;
+				gap: 2rem;
+			}
+
+			.project-card {
+				padding: 2rem;
+				background: rgba(10, 14, 39, 0.5);
+				transition: all 0.3s ease;
+			}
+
+			.project-card:hover {
+				background: rgba(10, 14, 39, 0.8);
+				transform: translateX(10px);
+			}
+
+			.project-card h3 {
+				color: var(--cyber-blue);
+				margin-bottom: 0.5rem;
+				font-size: 1.5rem;
+			}
+
+			.tech {
+				color: var(--cyber-green);
+				font-size: 0.85rem;
+				text-transform: uppercase;
+				letter-spacing: 0.1em;
+				margin-bottom: 1rem;
+			}
+
+			.description {
+				color: #ccc;
+				line-height: 1.8;
+				margin-bottom: 1rem;
+			}
+
+			.links {
+				display: flex;
+				gap: 1.5rem;
+				flex-wrap: wrap;
+			}
+
+			.links a {
+				color: var(--cyber-pink);
+				font-family: 'Orbitron', sans-serif;
+				font-size: 0.9rem;
+				letter-spacing: 0.1em;
+			}
+		</style>
+	</body>
+</html>

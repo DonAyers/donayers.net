@@ -1,0 +1,17 @@
+---
+interface Props {
+	variant?: 'blue' | 'pink' | 'purple';
+}
+
+const { variant = 'blue' } = Astro.props;
+
+const colorClasses = {
+	blue: 'border-cyber-blue/30 hover:border-cyber-blue hover:shadow-neon-blue',
+	pink: 'border-cyber-pink/30 hover:border-cyber-pink hover:shadow-neon-pink',
+	purple: 'border-cyber-purple/30 hover:border-cyber-purple hover:shadow-neon-purple',
+};
+---
+
+<div class={`card backdrop-blur-sm bg-cyber-dark/60 border ${colorClasses[variant]} transition-all duration-300 group`}>
+	<slot />
+</div>

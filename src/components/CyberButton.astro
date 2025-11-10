@@ -1,0 +1,24 @@
+---
+interface Props {
+	href: string;
+	variant?: 'blue' | 'pink' | 'green';
+	external?: boolean;
+}
+
+const { href, variant = 'blue', external = false } = Astro.props;
+
+const colorClasses = {
+	blue: 'border-cyber-blue text-cyber-blue hover:bg-cyber-blue hover:shadow-neon-blue',
+	pink: 'border-cyber-pink text-cyber-pink hover:bg-cyber-pink hover:shadow-neon-pink',
+	green: 'border-cyber-green text-cyber-green hover:bg-cyber-green hover:shadow-neon-green',
+};
+---
+
+<a
+	href={href}
+	target={external ? '_blank' : undefined}
+	rel={external ? 'noopener noreferrer' : undefined}
+	class={`inline-block px-8 py-3 border-2 ${colorClasses[variant]} hover:text-cyber-darker transition-all duration-300 uppercase tracking-wider font-bold text-sm`}
+>
+	<slot />
+</a>
