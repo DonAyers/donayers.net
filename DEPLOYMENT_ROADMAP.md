@@ -65,6 +65,30 @@ donayers.net/
 
 ---
 
+## ⚠️ Important: Understanding TinaCMS Cloud vs GitHub Backend
+
+**Common Question:** Do I need TinaCMS Cloud credentials if I want to use GitHub as the backend?
+
+**Answer:** **No!** There are two completely different ways to use TinaCMS:
+
+1. **TinaCMS Cloud** (managed service)
+   - Requires `PUBLIC_TINA_CLIENT_ID` and `TINA_TOKEN` from tina.io
+   - Provides managed GraphQL API, user auth, and hosting
+   - The `tinacms build` command needs these credentials
+   - Best for teams with non-technical editors
+
+2. **Self-Hosted with GitHub Backend** (local-only CMS)
+   - Uses `tinacms-gitprovider-github` package (already in your dependencies)
+   - Only needs a GitHub Personal Access Token
+   - **NO TinaCMS Cloud credentials required**
+   - CMS works during `npm run dev` only
+   - Production builds **skip** the `tinacms build` step entirely
+   - For production, content is read directly from MDX files
+
+**Current Issue:** Your codebase has `tinacms-gitprovider-github` installed and `GITHUB_BACKEND_SETUP.md` documentation, but the build script still runs `tinacms build`, which expects TinaCMS Cloud credentials. This needs to be fixed (see Option 2 or Option 3 below).
+
+---
+
 ## Deployment Options
 
 ### Option 1: TinaCMS Cloud + GitHub Pages (Recommended for CMS Features)
@@ -102,11 +126,14 @@ donayers.net/
 
 **Description:** Use TinaCMS with GitHub as the backend (no TinaCMS Cloud).
 
+> **Important:** This option does NOT require TinaCMS Cloud credentials (`PUBLIC_TINA_CLIENT_ID` or `TINA_TOKEN`). It uses the `tinacms-gitprovider-github` package (already in your dependencies) with only a GitHub Personal Access Token. The `tinacms build` command is skipped for production builds.
+
 **Pros:**
 - No external service dependencies
 - Free (only uses GitHub)
 - Content stored directly in repository
 - Still provides CMS interface for local editing
+- No TinaCMS Cloud account needed
 
 **Cons:**
 - CMS only works locally during development
