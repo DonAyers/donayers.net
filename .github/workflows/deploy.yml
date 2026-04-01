@@ -39,8 +39,8 @@ jobs:
         env:
           PUBLIC_TINA_CLIENT_ID: ${{ secrets.PUBLIC_TINA_CLIENT_ID }}
           TINA_TOKEN: ${{ secrets.TINA_TOKEN }}
-          SITE_URL: https://donayers.github.io
-          BASE_PATH: /donayers.net
+          SITE_URL: https://donayers.net
+          BASE_PATH: /
         run: npm run build
 
       - name: Upload Pages artifact

@@ -10,54 +10,36 @@ const { title, description } = Astro.props;
 ---
 
 <html lang="en">
-	<head>
-		<BaseHead title={title} description={description} />
-		<style>
-			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
-			}
-			.hero-image {
-				width: 100%;
-			}
-			.hero-image img {
-				display: block;
-				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
-			}
-			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
-				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
-			}
-			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
-				text-align: center;
-				line-height: 1;
-			}
-			.title h1 {
-				margin: 0 0 0.5em 0;
-			}
-			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
-			}
-			.last-updated-on {
-				font-style: italic;
-			}
-		</style>
-	</head>
-
-	<body>
-		<Header />
-		<main>
-			<slot />
-		</main>
-		<Footer />
-	</body>
+  <head>
+    <BaseHead title={title} description={description} />
+  </head>
+  <body>
+    <Header />
+    <main class="site-shell page-stack">
+      <section class="site-panel" style="display:grid; gap:1rem;">
+        <span class="eyebrow">Blog post</span>
+        <div style="display:grid; gap:0.75rem; max-width:52rem;">
+          <h1>{title}</h1>
+          <p class="page-copy">{description}</p>
+        </div>
+      </section>
+      <section class="site-panel prose post-prose">
+        <slot />
+      </section>
+    </main>
+    <Footer />
+  </body>
 </html>
+
+<style>
+  .post-prose {
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .post-prose :global(img) {
+    border: 3px solid var(--border);
+    box-shadow: 6px 6px 0 rgba(31, 34, 48, 0.08);
+  }
+</style>

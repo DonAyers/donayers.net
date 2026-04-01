@@ -8,106 +8,47 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import { withBase } from '../../utils/withBase';
 
 const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
-
 ---
 
 <!doctype html>
 <html lang="en">
-	<head>
-		<BaseHead title={config.seo.title} description={config.seo.description} />
-		<style>
-			main {
-				width: 960px;
-			}
-			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
-				list-style-type: none;
-				margin: 0;
-				padding: 0;
-			}
-			ul li {
-				width: calc(50% - 1rem);
-			}
-			ul li * {
-				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
-			}
-			ul li img {
-				margin-bottom: 0.5rem;
-				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
-			}
-			.title {
-				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
-			}
-			.date {
-				margin: 0;
-				color: rgb(var(--gray));
-			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
-			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
-			}
-			@media (max-width: 720px) {
-				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
-				}
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				<ul>
-					{
-						posts.map((post) => (
-							<li>
-								<a href={withBase(`/blog/${post.id}/`)}>
-									<img width={720} height={360} src={withBase(post.data.heroImage ?? '')} alt="" />
-									<h4 class="title">{post.data.title}</h4>
-									<p class="date">
-										<FormattedDate date={post.data.pubDate} />
-									</p>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</body>
+  <head>
+    <BaseHead title={`${config.seo.title} | Blog`} description={config.seo.description} />
+  </head>
+  <body>
+    <Header />
+    <main class="site-shell page-stack">
+      <section class="site-panel" style="display:grid; gap:1rem;">
+        <span class="eyebrow">Blog</span>
+        <div class="section-heading">
+          <div style="display:grid; gap:0.75rem;">
+            <h1>Notes on frontend work, tools, and experiments.</h1>
+            <p class="page-copy">A cleaner reading surface, same content underneath.</p>
+          </div>
+          <span class="stat-pill"><strong>{posts.length}</strong> posts</span>
+        </div>
+      </section>
+
+      <section class="card-grid">
+        {posts.map((post) => (
+          <article class="list-card">
+            {post.data.heroImage && (
+              <a href={withBase(`/blog/${post.id}/`)}>
+                <img src={withBase(post.data.heroImage)} alt="" style="border:3px solid var(--border); box-shadow:6px 6px 0 rgba(31,34,48,0.1);" />
+              </a>
+            )}
+            <div style="display:grid; gap:0.7rem;">
+              <p class="card-meta"><FormattedDate date={post.data.pubDate} /></p>
+              <h2>{post.data.title}</h2>
+              <p class="page-copy">{post.data.description}</p>
+              <a href={withBase(`/blog/${post.id}/`)} class="inline-link">Read post →</a>
+            </div>
+          </article>
+        ))}
+      </section>
+    </main>
+    <Footer />
+  </body>
 </html>

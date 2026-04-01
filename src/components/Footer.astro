@@ -1,96 +1,69 @@
 ---
-import config from "../content/config/config.json";
-import IconLink from "./react/IconLink";
-import { withBase } from "../utils/withBase";
+import config from '../content/config/config.json';
+import IconLink from './react/IconLink';
+import { withBase } from '../utils/withBase';
 const today = new Date();
 ---
-<div class="tina-footer">
-	<div class="tina-banner-content"><img src={withBase('/llama.svg')} alt="Tina CMS Llama Logo" /><a href="https://tina.io" target="_blank" rel="noopener noreferrer">Powered by TinaCMS</a>
-	</div>
-</div>
-	<footer class="copyright-footer">
-		&copy; {today.getFullYear()}
-		{config.seo.siteOwner}. All rights reserved.
-		<div class="social-links">
-			{
-				config?.contactLinks?.map((link) => {
-					return (
-						<IconLink {...link} />
-					);
-				})
-			}
-		</div>
-	</footer>
+
+<footer class="site-shell footer-wrap">
+  <div class="site-panel footer-panel">
+    <div>
+      <p class="footer-kicker">Built for the web, tuned for the tiny details.</p>
+      <p class="footer-copy">&copy; {today.getFullYear()} {config.seo.siteOwner}. Static Astro site with a lightweight pixel-art finish.</p>
+    </div>
+    {config.contactLinks?.length > 0 && (
+      <div class="social-links">
+        {config.contactLinks.map((link) => <IconLink {...link} link={link.link.startsWith('/') ? withBase(link.link) : link.link} />)}
+      </div>
+    )}
+  </div>
+</footer>
 
 <style>
+  .footer-wrap {
+    padding-bottom: 2rem;
+  }
 
-	.copyright-footer {
-		padding: 2em 1em 2em 1em;
-		background: linear-gradient(var(--gray-gradient)) no-repeat;
-		color: rgb(var(--gray));
-		text-align: center;
-	}
+  .footer-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
 
-	.social-links {
-		display: flex;
-		justify-content: center;
-		gap: 1em;
-		margin-top: 1em;
-	}
+  .footer-kicker {
+    margin-bottom: 0.35rem;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
 
-	.social-links a {
-		text-decoration: none;
-		color: rgb(var(--gray));
-	}
+  .footer-copy {
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
 
-	.social-links a:hover {
-		color: rgb(var(--gray-dark));
-	}
+  .social-links {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+  }
 
-	.tina-footer {
-		display: flex;
-		justify-content: center;
-		position: relative;
-		width: 100%;
-		overflow: hidden;
-		background-image: linear-gradient(60deg, #000000 0%,  #EC4815 50%, #000000 100%);
-		padding: 1.5em 0;
-	}
+  .social-links :global(a) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border);
+    background: #fff;
+    box-shadow: 4px 4px 0 rgba(31, 34, 48, 0.08);
+  }
 
-	.tina-banner-content {
-		display: flex;
-		align-items: center;
-		gap: 0.5em;
-		font-size: 1.2em;
-		position: relative;
-		z-index: 2;
-	}
-
-	.tina-footer::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: -50%;
-		width: 200%;
-		height: 100%;
-		background-image: linear-gradient(60deg, #1F1E24 25%,   #EC4815 50%, #1F1E24 75%);
-		transition: transform 1s ease-in-out;
-		z-index: 1;
-	}
-
-	.tina-footer:has(.tina-banner-content a:hover)::before {
-		transform: scaleX(2);
-	}
-
-	.tina-banner-content img {
-		width: 30px;
-		height: auto;
-	}
-
-	.tina-banner-content a {
-		color: white;
-		text-decoration: none;
-		padding-top: 0.5em;
-		font-weight: bold;
-	}
+  @media (max-width: 720px) {
+    .footer-panel {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
 </style>
