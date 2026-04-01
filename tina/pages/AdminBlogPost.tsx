@@ -3,6 +3,7 @@ import { tinaField, useTina } from "tinacms/dist/react";
 import type { BlogQuery, BlogQueryVariables } from '../__generated__/types';
 import { TinaMarkdown } from 'tinacms/dist/rich-text'
 import FormattedDate from '../../src/components/react/FormattedDate.tsx';
+import { withBase } from '../../src/utils/withBase';
 
 
 type Props = {
@@ -24,7 +25,7 @@ export default function AdminBlogPost(props: Props) {
 	return (
 		<article>
 			<div data-tina-field={tinaField(blog, "heroImage")} className="hero-image">
-				{blog.heroImage && <img width={1020} height={510} src={blog.heroImage} alt="" />}
+				{blog.heroImage && <img width={1020} height={510} src={withBase(blog.heroImage)} alt="" />}
 			</div>
 			<div className="prose">
 				<div className="title">

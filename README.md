@@ -60,6 +60,13 @@ Visit `http://localhost:4321/admin` to access the CMS.
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 
+## GitHub Pages POC
+
+- The repository now includes `.github/workflows/deploy.yml` to build and deploy via GitHub Actions.
+- In the repository settings, set **Pages** to **GitHub Actions** as the source.
+- The workflow expects the `PUBLIC_TINA_CLIENT_ID` and `TINA_TOKEN` repository secrets that you already added.
+- The Pages build targets `https://donayers.github.io/donayers.net`.
+
 ## License
 
 MIT

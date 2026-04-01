@@ -7,6 +7,7 @@ import tinaDirective from "./astro-tina-directive/register"
 
 // https://astro.build/config
 export default defineConfig({
-	site: process.env.SITE_URL || `https://${process.env.VERCEL_URL}`,
+	site: process.env.SITE_URL || "https://donayers.github.io",
+	base: process.env.BASE_PATH || "/donayers.net",
 	integrations: [mdx(), sitemap(), react(), tinaDirective()],
 });
