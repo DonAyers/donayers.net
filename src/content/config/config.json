@@ -1,8 +1,8 @@
 {
   "seo": {
-    "title": "Astro Blog + Tina",
-    "description": "Welcome to my website!",
-    "siteOwner": "Your name here"
+    "title": "Don Ayers",
+    "description": "Pixel-art polished portfolio for code, music, and notes from Don Ayers.",
+    "siteOwner": "Don Ayers"
   },
   "nav": [
     {
@@ -10,29 +10,28 @@
       "link": "/"
     },
     {
-      "title": "Blog",
-      "link": "/blog"
+      "title": "Music",
+      "link": "/music"
     },
     {
-      "title": "About",
-      "link": "/about"
+      "title": "Dev",
+      "link": "/dev"
+    },
+    {
+      "title": "Blog",
+      "link": "/blog"
     }
   ],
   "contactLinks": [
     {
-      "title": "Twitter",
-      "link": "https://x.com/tinacms",
-      "icon": "TbBrandTwitter"
-    },
-    {
-      "title": "Docs",
-      "link": "https://tina.io/docs",
-      "icon": "TbBook2"
-    },
-    {
       "title": "GitHub",
-      "link": "https://github.com/tinacms/tinacms",
+      "link": "https://github.com/DonAyers",
       "icon": "TbBrandGithub"
+    },
+    {
+      "title": "RSS",
+      "link": "/rss.xml",
+      "icon": "TbRss"
     }
   ]
 }

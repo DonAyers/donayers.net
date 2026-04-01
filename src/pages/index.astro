@@ -1,128 +1,88 @@
 ---
-import '../styles/global.css';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
 import { withBase } from '../utils/withBase';
+
+const quickLinks = [
+  { href: '/music', label: 'Explore music', tone: 'primary' },
+  { href: '/dev', label: 'Browse dev work', tone: 'mint' },
+  { href: '/blog', label: 'Read the blog', tone: 'sun' },
+];
+
+const highlights = [
+  { label: 'Focus', value: 'Clean UI + creative code' },
+  { label: 'Current mode', value: 'React builds / synth sketches' },
+  { label: 'Vibe', value: 'Pixel edges, calm layout' },
+];
 ---
 
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="description" content="React Developer & Music Producer" />
-		<title>Don Ayers</title>
-	</head>
-	<body class="grid-bg">
-		<!-- Main Container -->
-		<div class="wrapper">
-			<!-- Hero Section -->
-			<section class="hero">
-				<h1>DON AYERS</h1>
-				<!-- Navigation -->
-				<nav class="nav-links">
-					<a href={withBase('/')}>HOME</a>
-					<span class="separator">//</span>
-					<a href={withBase('/music')}>MUSIC</a>
-					<span class="separator">//</span>
-					<a href={withBase('/dev')}>DEV</a>
-				</nav>
-			</section>
+  <head>
+    <BaseHead title="Don Ayers" description="React developer, creative builder, and electronic music maker." />
+  </head>
+  <body class="grid-bg">
+    <Header />
+    <main class="site-shell page-stack">
+      <section class="site-panel hero-grid">
+        <div class="page-copy" style="display:grid; gap:1.2rem; align-content:start;">
+          <span class="eyebrow">Portfolio refresh in progress</span>
+          <div style="display:grid; gap:0.9rem;">
+            <h1>Pixel-art polish for code, music, and experiments.</h1>
+            <p class="lede">
+              I build modern frontend work, shape tiny interactions, and make atmospheric electronic music.
+              This pass leans cleaner, brighter, and a little more playful.
+            </p>
+          </div>
+          <div class="button-row">
+            {quickLinks.map((link) => (
+              <a href={withBase(link.href)} class:list={['pixel-button', link.tone]}>{link.label}</a>
+            ))}
+          </div>
+          <div class="stat-row">
+            {highlights.map((item) => (
+              <span class="stat-pill"><strong>{item.label}</strong> {item.value}</span>
+            ))}
+          </div>
+        </div>
 
-			<!-- Bio Section -->
-			<section class="bio">
-				<p>
-					Building modern web applications with React, TypeScript, and the latest tools. 
-					Passionate about clean code, performance, and creating seamless user experiences.
-				</p>
-				<p>
-					Crafting atmospheric soundscapes and electronic beats. Exploring the intersection 
-					of technology and creativity through synthesis and sound design.
-				</p>
-			</section>
-		</div>
+        <div class="pixel-scene">
+          <div class="section-heading">
+            <h2>Now building</h2>
+            <p>Simple shapes, bold borders, and room for the content to breathe.</p>
+          </div>
+          <div class="pixel-window" aria-hidden="true">
+            <div class="shape" style="--left:10%; --top:18%; --size:72px; --fill:var(--brand);"></div>
+            <div class="shape stair" style="--left:38%; --top:12%; --size:98px; --fill:var(--brand-4);"></div>
+            <div class="shape dot" style="--left:72%; --top:18%; --size:64px; --fill:var(--brand-3);"></div>
+            <div class="shape tall" style="--left:24%; --top:48%; --size:52px; --fill:var(--brand-2);"></div>
+            <div class="shape" style="--left:56%; --top:50%; --size:82px; --fill:#ffffff;"></div>
+            <div class="ground"></div>
+          </div>
+        </div>
+      </section>
 
-		<style>
-			.wrapper {
-				position: relative;
-				padding: 40px 20px;
-				max-width: 900px;
-				margin: 0 auto;
-				min-height: 100vh;
-				display: flex;
-				flex-direction: column;
-				justify-content: center;
-				gap: 3rem;
-			}
+      <section class="card-grid two-up">
+        <article class="project-card">
+          <span class="eyebrow">Dev</span>
+          <h2>Frontend systems with personality.</h2>
+          <p class="page-copy">
+            I like fast, maintainable interfaces, solid TypeScript foundations, and product polish that feels intentional.
+          </p>
+          <a href={withBase('/dev')} class="inline-link">See dev projects →</a>
+        </article>
 
-		.hero {
-			text-align: center;
-			margin-bottom: 2rem;
-			max-height: 40vh;
-			display: flex;
-			flex-direction: column;
-			justify-content: center;
-		}
-
-		@media (max-width: 768px) {
-			.hero {
-				max-height: 30vh;
-			}
-		}
-
-		.line {
-			height: 2px;
-			background: var(--cyber-blue);
-			margin: 2rem auto;
-			max-width: 400px;
-			box-shadow: 0 0 10px var(--cyber-blue);
-		}			.nav-links {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				gap: 1rem;
-				margin-top: 3rem;
-				font-family: 'Orbitron', sans-serif;
-				font-size: 1.2rem;
-				letter-spacing: 0.2em;
-			}
-
-			.nav-links a {
-				color: var(--cyber-blue);
-				text-shadow: 0 0 10px var(--cyber-blue);
-				font-weight: 700;
-			}
-
-			.nav-links a:hover {
-				color: var(--cyber-pink);
-				text-shadow: 0 0 15px var(--cyber-pink);
-			}
-
-			.separator {
-				color: var(--cyber-purple);
-				opacity: 0.5;
-			}
-
-			.bio {
-				max-width: 700px;
-				margin: 0 auto;
-				line-height: 2;
-			}
-
-			.bio p {
-				margin-bottom: 1.5rem;
-				color: #ccc;
-			}
-
-			@media (max-width: 768px) {
-				.wrapper {
-					padding: 20px 15px;
-				}
-
-				.nav-links {
-					flex-wrap: wrap;
-					font-size: 1rem;
-					gap: 0.5rem;
-				}
-			}
-		</style>
-	</body>
+        <article class="project-card">
+          <span class="eyebrow">Music</span>
+          <h2>Electronic sketches and textured sound design.</h2>
+          <p class="page-copy">
+            Music gives the site a second lane: slower, moodier, and built from the same curiosity as the code side.
+          </p>
+          <a href={withBase('/music')} class="inline-link">See music projects →</a>
+        </article>
+      </section>
+    </main>
+    <Footer />
+  </body>
 </html>

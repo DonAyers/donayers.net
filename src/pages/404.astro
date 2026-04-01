@@ -1,0 +1,94 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { withBase } from '../utils/withBase';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title="404 | Don Ayers" description="A playful 404 page for donayers.net." />
+  </head>
+  <body>
+    <Header />
+    <main class="site-shell page-stack">
+      <section class="site-panel missing-grid">
+        <div style="display:grid; gap:1rem; align-content:start;">
+          <span class="eyebrow">404 / signal lost</span>
+          <h1>Oops. That page drifted off the map.</h1>
+          <p class="page-copy" id="signal-message">
+            The path is missing, but the pixel scanner still works. Shuffle the scene or jump back home.
+          </p>
+          <div class="button-row">
+            <a href={withBase('/')} class="pixel-button primary">Return home</a>
+            <button class="pixel-button sun" id="shuffle-signal" type="button">Shuffle signal</button>
+          </div>
+          <div class="stat-row">
+            <span class="stat-pill"><strong id="shuffle-count">0</strong> recalibrations</span>
+            <a href={withBase('/music')} class="inline-link">Try music instead →</a>
+          </div>
+        </div>
+
+        <div class="pixel-window missing-scene" id="missing-scene" aria-live="polite">
+          <div class="shape stair" data-shape style="--left:12%; --top:14%; --size:88px; --fill:var(--brand);"></div>
+          <div class="shape" data-shape style="--left:56%; --top:18%; --size:60px; --fill:var(--brand-3);"></div>
+          <div class="shape dot" data-shape style="--left:72%; --top:48%; --size:68px; --fill:var(--brand-4);"></div>
+          <div class="shape tall" data-shape style="--left:26%; --top:44%; --size:54px; --fill:var(--brand-2);"></div>
+          <div class="ground"></div>
+        </div>
+      </section>
+    </main>
+    <Footer />
+
+    <script>
+      const messages = [
+        'Scanner sweep complete. Still no page, but the shapes look better now.',
+        'No luck yet. Maybe the route is hiding behind that orange block.',
+        'Signal bounced. You are officially in the fun fallback state.',
+        'The 404 remains undefeated, but the scene has been recalibrated.',
+      ];
+      const palette = ['var(--brand)', 'var(--brand-2)', 'var(--brand-3)', 'var(--brand-4)', '#ffffff'];
+      const button = document.getElementById('shuffle-signal');
+      const shapes = Array.from(document.querySelectorAll('[data-shape]'));
+      const message = document.getElementById('signal-message');
+      const counter = document.getElementById('shuffle-count');
+      let count = 0;
+
+      button?.addEventListener('click', () => {
+        count += 1;
+        counter.textContent = String(count);
+        message.textContent = messages[Math.floor(Math.random() * messages.length)];
+
+        shapes.forEach((shape, index) => {
+          const size = 48 + Math.floor(Math.random() * 60);
+          const left = 8 + Math.floor(Math.random() * 72);
+          const top = 10 + Math.floor(Math.random() * 48);
+          shape.style.setProperty('--size', `${size}px`);
+          shape.style.setProperty('--left', `${left}%`);
+          shape.style.setProperty('--top', `${top}%`);
+          shape.style.setProperty('--fill', palette[(count + index) % palette.length]);
+        });
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  .missing-grid {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  .missing-scene {
+    min-height: 360px;
+  }
+
+  @media (max-width: 900px) {
+    .missing-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

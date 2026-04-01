@@ -1,135 +1,57 @@
 ---
 import { getCollection } from 'astro:content';
-import '../../styles/global.css';
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
 import { withBase } from '../../utils/withBase';
 
 const musicProjects = await getCollection('music');
-const featured = musicProjects.filter((p) => p.data.featured);
 ---
 
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<title>Music - Don Ayers</title>
-	</head>
-	<body class="grid-bg">
-		<div class="wrapper">
-			<nav class="top-nav">
-				<a href={withBase('/')}>HOME</a>
-				<span>//</span>
-				<a href={withBase('/music')} class="active">MUSIC</a>
-				<span>//</span>
-				<a href={withBase('/dev')}>DEV</a>
-			</nav>
+  <head>
+    <BaseHead title="Music | Don Ayers" description="Music releases and experiments from Don Ayers." />
+  </head>
+  <body class="grid-bg">
+    <Header />
+    <main class="site-shell page-stack">
+      <section class="site-panel" style="display:grid; gap:1rem;">
+        <span class="eyebrow">Music</span>
+        <div class="section-heading">
+          <div style="display:grid; gap:0.75rem;">
+            <h1>Electronic work with a little neon left in it.</h1>
+            <p class="page-copy">Tracks, release notes, and sketches that pair well with late-night browser tabs.</p>
+          </div>
+          <span class="stat-pill"><strong>{musicProjects.length}</strong> projects</span>
+        </div>
+      </section>
 
-			<h1>MUSIC</h1>
-			<div class="line"></div>
-
-			<div class="projects">
-				{musicProjects.map((project) => (
-					<article class="project-card cyber-border">
-						<h3>{project.data.title}</h3>
-						{project.data.genre && (
-							<p class="genre">
-								{project.data.genre.join(' / ')}
-							</p>
-						)}
-						{project.data.description && (
-							<p class="description">{project.data.description}</p>
-						)}
-						<a href={withBase(`/music/${project.id}`)} class="read-more">
-							Listen →
-						</a>
-					</article>
-				))}
-			</div>
-		</div>
-
-		<style>
-			.wrapper {
-				max-width: 900px;
-				margin: 0 auto;
-				padding: 40px 20px;
-				min-height: 100vh;
-			}
-
-			.top-nav {
-				display: flex;
-				gap: 1rem;
-				margin-bottom: 3rem;
-				font-family: 'Orbitron', sans-serif;
-				font-size: 0.9rem;
-				letter-spacing: 0.15em;
-			}
-
-			.top-nav a {
-				color: var(--cyber-blue);
-				opacity: 0.6;
-			}
-
-			.top-nav a.active {
-				opacity: 1;
-				text-shadow: 0 0 10px var(--cyber-blue);
-			}
-
-			.top-nav span {
-				color: var(--cyber-purple);
-				opacity: 0.3;
-			}
-
-			.line {
-				height: 2px;
-				background: var(--cyber-pink);
-				margin: 2rem 0 3rem;
-				max-width: 400px;
-				box-shadow: 0 0 10px var(--cyber-pink);
-			}
-
-			.projects {
-				display: grid;
-				gap: 2rem;
-			}
-
-			.project-card {
-				padding: 2rem;
-				background: rgba(10, 14, 39, 0.5);
-				transition: all 0.3s ease;
-			}
-
-			.project-card:hover {
-				background: rgba(10, 14, 39, 0.8);
-				transform: translateX(10px);
-			}
-
-			.project-card h3 {
-				color: var(--cyber-pink);
-				margin-bottom: 0.5rem;
-				font-size: 1.5rem;
-			}
-
-			.genre {
-				color: var(--cyber-blue);
-				font-size: 0.85rem;
-				text-transform: uppercase;
-				letter-spacing: 0.1em;
-				margin-bottom: 1rem;
-			}
-
-			.description {
-				color: #ccc;
-				line-height: 1.8;
-				margin-bottom: 1rem;
-			}
-
-			.read-more {
-				display: inline-block;
-				color: var(--cyber-green);
-				font-family: 'Orbitron', sans-serif;
-				font-size: 0.9rem;
-				letter-spacing: 0.1em;
-			}
-		</style>
-	</body>
+      <section class="card-grid">
+        {musicProjects.map((project) => (
+          <article class="project-card">
+            <div class="section-heading">
+              <div style="display:grid; gap:0.55rem;">
+                <h2>{project.data.title}</h2>
+                {project.data.genre && <p class="card-meta">{project.data.genre.join(' / ')}</p>}
+              </div>
+              {project.data.releaseDate && (
+                <span class="tag-pill"><strong>Released</strong> {new Date(project.data.releaseDate).getFullYear()}</span>
+              )}
+            </div>
+            {project.data.description && <p class="page-copy">{project.data.description}</p>}
+            <div class="card-links">
+              <a href={withBase(`/music/${project.id}`)} class="inline-link">Open details →</a>
+              {project.data.links?.filter((link) => link?.url).map((link) => (
+                <a href={link.url ?? '#'} class="inline-link" target="_blank" rel="noopener noreferrer">
+                  {link.platform || 'Listen'} ↗
+                </a>
+              ))}
+            </div>
+          </article>
+        ))}
+      </section>
+    </main>
+    <Footer />
+  </body>
 </html>
