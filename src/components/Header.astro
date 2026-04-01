@@ -2,11 +2,12 @@
 import HeaderLink from "./HeaderLink.astro";
 import config from "../content/config/config.json";
 import IconLink from "./react/IconLink";
+import { withBase } from "../utils/withBase";
 ---
 
 <header>
 	<nav>
-		<h2><a href="/">{config.seo.title}</a></h2>
+		<h2><a href={withBase("/")}>{config.seo.title}</a></h2>
 		<div class="internal-links">
 			{
 				config.nav.map((nav) => (

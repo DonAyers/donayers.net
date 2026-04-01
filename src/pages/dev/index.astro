@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import '../../styles/global.css';
+import { withBase } from '../../utils/withBase';
 
 const devProjects = await getCollection('dev');
 ---
@@ -15,11 +16,11 @@ const devProjects = await getCollection('dev');
 	<body class="grid-bg">
 		<div class="wrapper">
 			<nav class="top-nav">
-				<a href="/">HOME</a>
+				<a href={withBase('/')}>HOME</a>
 				<span>//</span>
-				<a href="/music">MUSIC</a>
+				<a href={withBase('/music')}>MUSIC</a>
 				<span>//</span>
-				<a href="/dev" class="active">DEV</a>
+				<a href={withBase('/dev')} class="active">DEV</a>
 			</nav>
 
 			<h1>DEV PROJECTS</h1>
@@ -48,7 +49,7 @@ const devProjects = await getCollection('dev');
 									Live Demo →
 								</a>
 							)}
-							<a href={`/dev/${project.id}`}>
+							<a href={withBase(`/dev/${project.id}`)}>
 								Details →
 							</a>
 						</div>

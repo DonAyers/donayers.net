@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import { withBase } from '../utils/withBase';
 ---
 
 <!doctype html>
@@ -18,11 +19,11 @@ import '../styles/global.css';
 				<h1>DON AYERS</h1>
 				<!-- Navigation -->
 				<nav class="nav-links">
-					<a href="/">HOME</a>
+					<a href={withBase('/')}>HOME</a>
 					<span class="separator">//</span>
-					<a href="/music">MUSIC</a>
+					<a href={withBase('/music')}>MUSIC</a>
 					<span class="separator">//</span>
-					<a href="/dev">DEV</a>
+					<a href={withBase('/dev')}>DEV</a>
 				</nav>
 			</section>
 
@@ -125,4 +126,3 @@ import '../styles/global.css';
 		</style>
 	</body>
 </html>
-

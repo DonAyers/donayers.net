@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import '../../styles/global.css';
+import { withBase } from '../../utils/withBase';
 
 const musicProjects = await getCollection('music');
 const featured = musicProjects.filter((p) => p.data.featured);
@@ -16,11 +17,11 @@ const featured = musicProjects.filter((p) => p.data.featured);
 	<body class="grid-bg">
 		<div class="wrapper">
 			<nav class="top-nav">
-				<a href="/">HOME</a>
+				<a href={withBase('/')}>HOME</a>
 				<span>//</span>
-				<a href="/music" class="active">MUSIC</a>
+				<a href={withBase('/music')} class="active">MUSIC</a>
 				<span>//</span>
-				<a href="/dev">DEV</a>
+				<a href={withBase('/dev')}>DEV</a>
 			</nav>
 
 			<h1>MUSIC</h1>
@@ -38,7 +39,7 @@ const featured = musicProjects.filter((p) => p.data.featured);
 						{project.data.description && (
 							<p class="description">{project.data.description}</p>
 						)}
-						<a href={`/music/${project.id}`} class="read-more">
+						<a href={withBase(`/music/${project.id}`)} class="read-more">
 							Listen →
 						</a>
 					</article>
