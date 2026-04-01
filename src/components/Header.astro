@@ -19,7 +19,9 @@ import { withBase } from '../utils/withBase';
     </div>
     {config.contactLinks?.length > 0 && (
       <div class="social-links">
-        {config.contactLinks.map((link) => <IconLink {...link} link={link.link.startsWith('/') ? withBase(link.link) : link.link} />)}
+        {config.contactLinks.map(({ title, icon, link }) => (
+          <IconLink title={title} icon={icon} link={link.startsWith('/') ? withBase(link) : link} />
+        ))}
       </div>
     )}
   </nav>

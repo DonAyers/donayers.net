@@ -65,7 +65,8 @@ Visit `http://localhost:4321/admin` to access the CMS.
 - The repository now includes `.github/workflows/deploy.yml` to build and deploy via GitHub Actions.
 - In the repository settings, set **Pages** to **GitHub Actions** as the source.
 - The workflow expects the `PUBLIC_TINA_CLIENT_ID` and `TINA_TOKEN` repository secrets that you already added.
-- The Pages build targets `https://donayers.github.io/donayers.net`.
+- The Pages build targets the custom domain `https://donayers.net`.
+- `public/CNAME` is committed so GitHub Pages can keep the custom domain attached to the site artifact.
 
 ## License
 
