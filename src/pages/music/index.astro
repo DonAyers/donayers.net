@@ -17,7 +17,7 @@ const musicProjects = await getCollection('music');
     <Header />
     <main class="site-shell page-stack">
       <section class="site-panel" style="display:grid; gap:1rem;">
-        <span class="eyebrow">Music</span>
+        <span class="eyebrow music">Music</span>
         <div class="section-heading">
           <div style="display:grid; gap:0.75rem;">
             <h1>Electronic work with a little neon left in it.</h1>
@@ -29,7 +29,7 @@ const musicProjects = await getCollection('music');
 
       <section class="card-grid">
         {musicProjects.map((project) => (
-          <article class="project-card">
+          <article class="project-card" data-accent="teal">
             <div class="section-heading">
               <div style="display:grid; gap:0.55rem;">
                 <h2>{project.data.title}</h2>

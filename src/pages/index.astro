@@ -53,19 +53,20 @@ const highlights = [
             <p>Simple shapes, bold borders, and room for the content to breathe.</p>
           </div>
           <div class="pixel-window" aria-hidden="true">
-            <div class="shape" style="--left:10%; --top:18%; --size:72px; --fill:var(--brand);"></div>
-            <div class="shape stair" style="--left:38%; --top:12%; --size:98px; --fill:var(--brand-4);"></div>
-            <div class="shape dot" style="--left:72%; --top:18%; --size:64px; --fill:var(--brand-3);"></div>
-            <div class="shape tall" style="--left:24%; --top:48%; --size:52px; --fill:var(--brand-2);"></div>
-            <div class="shape" style="--left:56%; --top:50%; --size:82px; --fill:#ffffff;"></div>
+            <div class="shape" style="--left:10%; --top:18%; --size:72px; --fill:var(--brand); --float-dur:5.2s; --float-delay:0s;"></div>
+            <div class="shape stair" style="--left:38%; --top:12%; --size:98px; --fill:var(--brand-4); --float-dur:6.5s; --float-delay:-1.6s;"></div>
+            <div class="shape dot" style="--left:72%; --top:18%; --size:64px; --fill:var(--brand-3); --float-dur:4.2s; --float-delay:-3.1s;"></div>
+            <div class="shape tall" style="--left:24%; --top:46%; --size:52px; --fill:var(--brand-2); --float-dur:5.8s; --float-delay:-0.9s;"></div>
+            <div class="shape dot" style="--left:62%; --top:50%; --size:48px; --fill:var(--brand-4); --float-dur:7.1s; --float-delay:-2.4s;"></div>
+            <div class="shape" style="--left:78%; --top:44%; --size:36px; --fill:var(--brand); --float-dur:4.8s; --float-delay:-4.0s;"></div>
             <div class="ground"></div>
           </div>
         </div>
       </section>
 
       <section class="card-grid two-up">
-        <article class="project-card">
-          <span class="eyebrow">Dev</span>
+        <article class="project-card" data-accent="purple">
+          <span class="eyebrow dev">Dev</span>
           <h2>Frontend systems with personality.</h2>
           <p class="page-copy">
             I like fast, maintainable interfaces, solid TypeScript foundations, and product polish that feels intentional.
@@ -73,8 +74,8 @@ const highlights = [
           <a href={withBase('/dev')} class="inline-link">See dev projects →</a>
         </article>
 
-        <article class="project-card">
-          <span class="eyebrow">Music</span>
+        <article class="project-card" data-accent="teal">
+          <span class="eyebrow music">Music</span>
           <h2>Electronic sketches and textured sound design.</h2>
           <p class="page-copy">
             Music gives the site a second lane: slower, moodier, and built from the same curiosity as the code side.

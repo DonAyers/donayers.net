@@ -22,21 +22,25 @@ const isActive = href === pathname || href === '/' + (subpath?.[0] || '');
     min-height: 42px;
     padding: 0.55rem 0.85rem;
     border: 2px solid var(--border);
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 4px 4px 0 rgba(31, 34, 48, 0.08);
+    background: rgba(255, 253, 248, 0.82);
+    box-shadow: 4px 4px 0 rgba(26, 29, 46, 0.09);
     text-decoration: none;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.72rem;
     font-family: 'Silkscreen', sans-serif;
+    transition: transform 100ms ease, box-shadow 100ms ease, background 120ms ease;
   }
 
   a:hover {
-    transform: translate(-1px, -1px);
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 rgba(26, 29, 46, 0.13);
+    background: rgba(255, 200, 50, 0.18);
   }
 
   a.active {
     background: var(--brand);
     color: white;
+    box-shadow: 4px 4px 0 rgba(91, 71, 245, 0.35);
   }
 </style>

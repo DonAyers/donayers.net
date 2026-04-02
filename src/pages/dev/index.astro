@@ -17,7 +17,7 @@ const devProjects = await getCollection('dev');
     <Header />
     <main class="site-shell page-stack">
       <section class="site-panel" style="display:grid; gap:1rem;">
-        <span class="eyebrow">Dev</span>
+        <span class="eyebrow dev">Dev</span>
         <div class="section-heading">
           <div style="display:grid; gap:0.75rem;">
             <h1>Modern frontend builds with tight interaction details.</h1>
@@ -29,7 +29,7 @@ const devProjects = await getCollection('dev');
 
       <section class="card-grid">
         {devProjects.map((project) => (
-          <article class="project-card">
+          <article class="project-card" data-accent="purple">
             <div class="section-heading">
               <div style="display:grid; gap:0.55rem;">
                 <h2>{project.data.title}</h2>
