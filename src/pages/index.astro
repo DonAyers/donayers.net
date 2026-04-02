@@ -10,11 +10,6 @@ const quickLinks = [
   { href: '/blog', label: 'Read the blog', tone: 'sun' },
 ];
 
-const highlights = [
-  { label: 'Focus', value: 'Clean UI + creative code' },
-  { label: 'Current mode', value: 'React builds / synth sketches' },
-  { label: 'Vibe', value: 'Pixel edges, calm layout' },
-];
 ---
 
 <!doctype html>
@@ -26,41 +21,27 @@ const highlights = [
     <Header />
     <main class="site-shell page-stack">
       <section class="site-panel hero-grid">
-        <div class="page-copy" style="display:grid; gap:1.2rem; align-content:start;">
-          <span class="eyebrow">Portfolio refresh in progress</span>
-          <div style="display:grid; gap:0.9rem;">
-            <h1>Pixel-art polish for code, music, and experiments.</h1>
-            <p class="lede">
-              I build modern frontend work, shape tiny interactions, and make atmospheric electronic music.
-              This pass leans cleaner, brighter, and a little more playful.
-            </p>
-          </div>
+        <div style="display:grid; gap:1.4rem; align-content:start; min-width:0;">
+          <span class="eyebrow">Don Ayers</span>
+          <h1>Code, music, and a few odd experiments.</h1>
+          <p class="lede">
+            I build modern frontend work, shape tiny interactions, and make atmospheric electronic music.
+          </p>
           <div class="button-row">
             {quickLinks.map((link) => (
               <a href={withBase(link.href)} class:list={['pixel-button', link.tone]}>{link.label}</a>
             ))}
           </div>
-          <div class="stat-row">
-            {highlights.map((item) => (
-              <span class="stat-pill"><strong>{item.label}</strong> {item.value}</span>
-            ))}
-          </div>
         </div>
 
-        <div class="pixel-scene">
-          <div class="section-heading">
-            <h2>Now building</h2>
-            <p>Simple shapes, bold borders, and room for the content to breathe.</p>
-          </div>
-          <div class="pixel-window" aria-hidden="true">
-            <div class="shape" style="--left:10%; --top:18%; --size:72px; --fill:var(--brand); --float-dur:5.2s; --float-delay:0s;"></div>
-            <div class="shape stair" style="--left:38%; --top:12%; --size:98px; --fill:var(--brand-4); --float-dur:6.5s; --float-delay:-1.6s;"></div>
-            <div class="shape dot" style="--left:72%; --top:18%; --size:64px; --fill:var(--brand-3); --float-dur:4.2s; --float-delay:-3.1s;"></div>
-            <div class="shape tall" style="--left:24%; --top:46%; --size:52px; --fill:var(--brand-2); --float-dur:5.8s; --float-delay:-0.9s;"></div>
-            <div class="shape dot" style="--left:62%; --top:50%; --size:48px; --fill:var(--brand-4); --float-dur:7.1s; --float-delay:-2.4s;"></div>
-            <div class="shape" style="--left:78%; --top:44%; --size:36px; --fill:var(--brand); --float-dur:4.8s; --float-delay:-4.0s;"></div>
-            <div class="ground"></div>
-          </div>
+        <div class="pixel-window" aria-hidden="true" style="min-height:280px;">
+          <div class="shape" style="--left:10%; --top:18%; --size:72px; --fill:var(--brand); --float-dur:5.2s; --float-delay:0s;"></div>
+          <div class="shape stair" style="--left:38%; --top:12%; --size:98px; --fill:var(--brand-4); --float-dur:6.5s; --float-delay:-1.6s;"></div>
+          <div class="shape dot" style="--left:72%; --top:18%; --size:64px; --fill:var(--brand-3); --float-dur:4.2s; --float-delay:-3.1s;"></div>
+          <div class="shape tall" style="--left:24%; --top:46%; --size:52px; --fill:var(--brand-2); --float-dur:5.8s; --float-delay:-0.9s;"></div>
+          <div class="shape dot" style="--left:62%; --top:50%; --size:48px; --fill:var(--brand-4); --float-dur:7.1s; --float-delay:-2.4s;"></div>
+          <div class="shape" style="--left:78%; --top:44%; --size:36px; --fill:var(--brand); --float-dur:4.8s; --float-delay:-4.0s;"></div>
+          <div class="ground"></div>
         </div>
       </section>
 
