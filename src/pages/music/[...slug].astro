@@ -1,0 +1,206 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { withBase } from '../../utils/withBase';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('music');
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { title, description, genre, releaseDate, links } = project.data;
+
+const bandcampEmbedIds: Record<string, string> = {
+  'black-giraffe':   '2657265468',
+  'maps-on-fire':    '1997636830',
+  'luminol':         '2349734073',
+  'read-underwater': '3093460534',
+};
+
+const bandColors: Record<string, string> = {
+  'black-giraffe':   'coral',
+  'maps-on-fire':    'purple',
+  'luminol':         'teal',
+  'read-underwater': 'sun',
+};
+
+const embedId = bandcampEmbedIds[project.id];
+const color = bandColors[project.id] ?? 'purple';
+const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
+const bandcampLink = links?.find(l => l?.platform === 'Bandcamp')?.url;
+
+const { Content } = await project.render();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={`${title} | Don Ayers`} description={description ?? ''} />
+  </head>
+  <body class="grid-bg">
+    <Header />
+    <main class="site-shell page-stack">
+
+      <div class="music-detail-hero" data-color={color}>
+        <div class="hero-inner">
+          <a href={withBase('/music')} class="back-link">← Music</a>
+          <div class="hero-meta">
+            {genre && <p class="genre-list">{genre.join(' · ')}</p>}
+            {year && <span class="year-badge">{year}</span>}
+          </div>
+          <h1>{title}</h1>
+          {description && <p class="hero-desc">{description}</p>}
+        </div>
+        <div class="hero-shapes" aria-hidden="true">
+          <div class="hs hs-1"></div>
+          <div class="hs hs-2"></div>
+          <div class="hs hs-3"></div>
+        </div>
+      </div>
+
+      {embedId && (
+        <div class="site-panel player-panel">
+          <p class="player-label">Listen</p>
+          <iframe
+            class="bandcamp-player"
+            src={`https://bandcamp.com/EmbeddedPlayer/album=${embedId}/size=large/bgcol=fffdf8/linkcol=5b47f5/tracklist=true/transparent=true/`}
+            seamless
+            title={`${title} on Bandcamp`}
+          ></iframe>
+          {bandcampLink && (
+            <a href={bandcampLink} target="_blank" rel="noopener noreferrer" class="pixel-button" style="align-self:start;">
+              Open on Bandcamp ↗
+            </a>
+          )}
+        </div>
+      )}
+
+      <div class="site-panel prose post-prose">
+        <Content />
+      </div>
+
+    </main>
+    <Footer />
+  </body>
+</html>
+
+<style>
+  .music-detail-hero {
+    position: relative;
+    border: 3px solid var(--border);
+    overflow: hidden;
+    padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 3vw, 2.5rem);
+    box-shadow: var(--shadow), var(--shadow-soft);
+    display: flex;
+    align-items: flex-end;
+    min-height: 280px;
+  }
+
+  .music-detail-hero[data-color="purple"] { background: linear-gradient(135deg, rgba(91,71,245,0.18) 0%, rgba(91,71,245,0.05) 100%), var(--panel); }
+  .music-detail-hero[data-color="coral"]  { background: linear-gradient(135deg, rgba(255,96,64,0.18) 0%, rgba(255,96,64,0.05) 100%), var(--panel); }
+  .music-detail-hero[data-color="teal"]   { background: linear-gradient(135deg, rgba(11,184,164,0.18) 0%, rgba(11,184,164,0.05) 100%), var(--panel); }
+  .music-detail-hero[data-color="sun"]    { background: linear-gradient(135deg, rgba(255,200,50,0.22) 0%, rgba(255,200,50,0.05) 100%), var(--panel); }
+
+  .hero-inner {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 0.75rem;
+    max-width: 640px;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 120ms ease;
+  }
+  .back-link:hover { color: var(--brand); }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .genre-list {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .year-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.6rem;
+    border: 2px solid var(--border);
+    background: rgba(255,253,248,0.9);
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 0.65rem;
+    box-shadow: 3px 3px 0 rgba(26,29,46,0.08);
+  }
+
+  .hero-desc {
+    color: var(--muted);
+    max-width: 52ch;
+    margin: 0;
+    font-size: clamp(0.9rem, 1.4vw, 1rem);
+  }
+
+  /* decorative shapes */
+  .hero-shapes {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .hs {
+    position: absolute;
+    border: 3px solid var(--border);
+    opacity: 0.12;
+  }
+  .hs-1 { width: 120px; height: 120px; right: 12%; top: 15%; background: var(--brand); animation: shape-float 5s ease-in-out infinite; }
+  .hs-2 { width: 80px; height: 80px; right: 28%; top: 40%; border-radius: 999px; background: var(--brand-3); animation: shape-float 7s ease-in-out infinite; animation-delay: -2s; }
+  .hs-3 { width: 60px; height: 90px; right: 18%; bottom: 10%; background: var(--brand-2); animation: shape-float 6s ease-in-out infinite; animation-delay: -4s; }
+
+  .player-panel {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .player-label {
+    font-family: 'Silkscreen', sans-serif;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  .bandcamp-player {
+    border: 0;
+    width: 100%;
+    height: 400px;
+  }
+
+  .post-prose {
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+  }
+</style>
