@@ -21,11 +21,11 @@ const posts = (await getCollection('blog')).sort(
     <Header />
     <main class="site-shell page-stack">
       <section class="site-panel" style="display:grid; gap:1rem;">
-        <span class="eyebrow">Blog</span>
+        <span class="eyebrow blog">Blog</span>
         <div class="section-heading">
           <div style="display:grid; gap:0.75rem;">
-            <h1>Notes on frontend work, tools, and experiments.</h1>
-            <p class="page-copy">A cleaner reading surface, same content underneath.</p>
+            <h1>Notes on things worth writing down.</h1>
+            <p class="page-copy">Occasional posts on frontend dev, music, tools, and whatever else is worth writing down.</p>
           </div>
           <span class="stat-pill"><strong>{posts.length}</strong> posts</span>
         </div>
