@@ -35,7 +35,6 @@ const color = bandColors[project.id] ?? 'purple';
 const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
 const bandcampLink = links?.find(l => l?.platform === 'Bandcamp')?.url;
 
-const { Content } = await project.render();
 ---
 
 <!doctype html>
@@ -81,9 +80,6 @@ const { Content } = await project.render();
         </div>
       )}
 
-      <div class="site-panel prose post-prose">
-        <Content />
-      </div>
 
     </main>
     <Footer />
@@ -198,9 +194,4 @@ const { Content } = await project.render();
     height: 400px;
   }
 
-  .post-prose {
-    max-width: 860px;
-    width: 100%;
-    margin: 0 auto;
-  }
 </style>
