@@ -15,17 +15,17 @@ const quickLinks = [
 <!doctype html>
 <html lang="en">
   <head>
-    <BaseHead title="Don Ayers" description="React developer, creative builder, and electronic music maker." />
+    <BaseHead title="Don Ayers" description="Lead frontend developer and musician. Based in LA, formerly Seattle. Builds React apps by day, plays drums in bands by night." />
   </head>
   <body class="grid-bg">
     <Header />
     <main class="site-shell page-stack">
       <section class="site-panel hero-grid">
         <div style="display:grid; gap:1.4rem; align-content:start; min-width:0;">
-          <span class="eyebrow">Don Ayers</span>
-          <h1>Code, music, and a few odd experiments.</h1>
+          <span class="eyebrow">LA · formerly Seattle</span>
+          <h1>Frontend dev, drummer, and perpetual side-project starter.</h1>
           <p class="lede">
-            I build modern frontend work, shape tiny interactions, and make atmospheric electronic music.
+            Lead frontend dev at Care Continuity by day. Drummer in Seattle bands for years — Maps on Fire, Black Giraffe, Luminol. Now in LA, still building things.
           </p>
           <div class="button-row">
             {quickLinks.map((link) => (
@@ -48,18 +48,18 @@ const quickLinks = [
       <section class="card-grid two-up">
         <article class="project-card" data-accent="purple">
           <span class="eyebrow dev">Dev</span>
-          <h2>Frontend systems with personality.</h2>
+          <h2>Lead frontend dev at Care Continuity, plus side projects.</h2>
           <p class="page-copy">
-            I like fast, maintainable interfaces, solid TypeScript foundations, and product polish that feels intentional.
+            React, TypeScript, and a focus on interfaces that hold up under real-world pressure. Also: a music transcription app, a pixel art generator, and an AI platformer.
           </p>
           <a href={withBase('/dev')} class="inline-link">See dev projects →</a>
         </article>
 
         <article class="project-card" data-accent="teal">
           <span class="eyebrow music">Music</span>
-          <h2>Electronic sketches and textured sound design.</h2>
+          <h2>Drummer in Seattle bands for a decade.</h2>
           <p class="page-copy">
-            Music gives the site a second lane: slower, moodier, and built from the same curiosity as the code side.
+            Maps on Fire, Black Giraffe, Luminol, Read Underwater. Rock, soul, ambient, and everything in between. All on Bandcamp.
           </p>
           <a href={withBase('/music')} class="inline-link">See music projects →</a>
         </article>

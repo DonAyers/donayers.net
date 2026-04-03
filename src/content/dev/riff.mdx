@@ -1,0 +1,47 @@
+---
+title: "Riff"
+description: "Browser-based polyphonic music transcription app. Record or import audio, run Spotify's Basic Pitch entirely client-side, and get back notes, chords, key, and guitar voicings — no backend, no account."
+tech:
+  - React 19
+  - TypeScript
+  - Vite
+  - Web Audio API
+  - TensorFlow.js
+  - Tonal.js
+  - IndexedDB
+  - PWA
+startDate: 2025-01-01T00:00:00.000Z
+status: "Experimental"
+githubUrl: "https://github.com/DonAyers/riff"
+featured: true
+---
+
+## Overview
+
+Riff is a browser-only tool for capturing a musical idea and turning it into something you can work with. It records from the microphone or imports an audio file, runs pitch detection entirely in a Web Worker using Spotify's Basic Pitch model, and gives back a structured view of what it heard — no server involved, audio stays on your device.
+
+### What it does
+
+- **Capture** — Record live from a mic or import an existing file
+- **Analyze** — Basic Pitch runs in a worker thread via TensorFlow.js; instrument profiles tune the detection for guitar-first or full-range analysis
+- **Notes lane** — Pitch, timing, note names, piano-roll playback
+- **Guitar lane** — Key detection, chord changes, substitution suggestions, and playable chord diagrams
+- **Export** — MIDI, WAV, MP3, and the original compressed capture
+- **Offline-ready** — Installs as a PWA with cached model assets
+
+### Architecture
+
+The core orchestration layer is `useRiffSession` — it owns recording state, analysis, playback, saved sessions, and export. Audio persistence prefers OPFS and falls back to IndexedDB blobs. The pitch detection worker handles the heavy inference off the main thread and throttles progress updates back to the UI.
+
+### Stack
+
+| Layer | Technology |
+|---|---|
+| UI | React 19 + TypeScript |
+| Build | Vite 7 |
+| Audio capture | Web Audio API + AudioWorklet |
+| Pitch detection | `@spotify/basic-pitch` + TensorFlow.js |
+| Music theory | Tonal / `@tonaljs` |
+| Local storage | IndexedDB (`idb`) + OPFS fallback |
+| Testing | Vitest + Playwright |
+| Deployment | Vercel |
