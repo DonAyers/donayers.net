@@ -20,14 +20,14 @@ const posts = (await getCollection('blog')).sort(
   <body>
     <Header />
     <main class="site-shell page-stack">
-      <section class="site-panel" style="display:grid; gap:1rem;">
+      <section class="site-panel" style="display:grid; gap:1.25rem;">
         <span class="eyebrow blog">Blog</span>
         <div class="section-heading">
           <div style="display:grid; gap:0.75rem;">
             <h1>Notes on things worth writing down.</h1>
             <p class="page-copy">Occasional posts on frontend dev, music, tools, and whatever else is worth writing down.</p>
           </div>
-          <span class="stat-pill"><strong>{posts.length}</strong> posts</span>
+          <span class="stat-pill"><strong>{posts.length}</strong>&nbsp;posts</span>
         </div>
       </section>
 
@@ -36,7 +36,7 @@ const posts = (await getCollection('blog')).sort(
           <article class="list-card">
             {post.data.heroImage && (
               <a href={withBase(`/blog/${post.id}/`)}>
-                <img src={withBase(post.data.heroImage)} alt="" style="border:3px solid var(--border); box-shadow:6px 6px 0 rgba(31,34,48,0.1);" />
+                <img src={withBase(post.data.heroImage)} alt="" style="border: 1px solid var(--border);" />
               </a>
             )}
             <div style="display:grid; gap:0.7rem;">

@@ -5,11 +5,10 @@ import Footer from '../components/Footer.astro';
 import { withBase } from '../utils/withBase';
 
 const quickLinks = [
-  { href: '/music', label: 'Explore music', tone: 'primary' },
-  { href: '/dev', label: 'Browse dev work', tone: 'mint' },
-  { href: '/blog', label: 'Read the blog', tone: 'sun' },
+  { href: '/music', label: 'Explore music',   tone: 'primary' },
+  { href: '/dev',   label: 'Browse dev work', tone: 'mint'    },
+  { href: '/blog',  label: 'Read the blog',   tone: 'sun'     },
 ];
-
 ---
 
 <!doctype html>
@@ -17,15 +16,17 @@ const quickLinks = [
   <head>
     <BaseHead title="Don Ayers" description="Lead frontend developer and musician. Based in LA, formerly Seattle. Builds React apps by day, plays drums in bands by night." />
   </head>
-  <body class="grid-bg">
+  <body>
     <Header />
     <main class="site-shell page-stack">
-      <section class="site-panel hero-grid">
-        <div style="display:grid; gap:1.4rem; align-content:start; min-width:0;">
-          <span class="eyebrow">LA · formerly Seattle</span>
-          <h1>Frontend dev, drummer, and perpetual side-project starter.</h1>
+
+      <!-- Hero -->
+      <section class="hero-section">
+        <div class="hero-content">
+          <span class="eyebrow">Los Angeles · formerly Seattle</span>
+          <h1 class="hero-title">Frontend dev,<br><em>musician,</em><br>and perpetual<br>tinkerer.</h1>
           <p class="lede">
-            Lead frontend dev at Care Continuity by day. Drummer in Seattle bands for years — Maps on Fire, Black Giraffe, Luminol. Now in LA, still building things.
+            Lead frontend dev at Care Continuity by day. Guitarist, drummer, and bandmate in Seattle bands for years — Maps on Fire, Black Giraffe, Luminol. Now in LA, still building things.
           </p>
           <div class="button-row">
             {quickLinks.map((link) => (
@@ -34,37 +35,155 @@ const quickLinks = [
           </div>
         </div>
 
-        <div class="pixel-window" aria-hidden="true" style="min-height:280px;">
-          <div class="shape" style="--left:10%; --top:18%; --size:72px; --fill:var(--brand); --float-dur:5.2s; --float-delay:0s;"></div>
-          <div class="shape stair" style="--left:38%; --top:12%; --size:98px; --fill:var(--brand-4); --float-dur:6.5s; --float-delay:-1.6s;"></div>
-          <div class="shape dot" style="--left:72%; --top:18%; --size:64px; --fill:var(--brand-3); --float-dur:4.2s; --float-delay:-3.1s;"></div>
-          <div class="shape tall" style="--left:24%; --top:46%; --size:52px; --fill:var(--brand-2); --float-dur:5.8s; --float-delay:-0.9s;"></div>
-          <div class="shape dot" style="--left:62%; --top:50%; --size:48px; --fill:var(--brand-4); --float-dur:7.1s; --float-delay:-2.4s;"></div>
-          <div class="shape" style="--left:78%; --top:44%; --size:36px; --fill:var(--brand); --float-dur:4.8s; --float-delay:-4.0s;"></div>
-          <div class="ground"></div>
+        <!-- Geometric composition, mood-board inspired -->
+        <div class="hero-geo" aria-hidden="true">
+          <div class="geo geo-circle"></div>
+          <div class="geo geo-rect"></div>
+          <div class="geo geo-rect-sm"></div>
+          <div class="geo geo-dot"></div>
+          <div class="geo geo-line"></div>
         </div>
       </section>
 
-      <section class="card-grid two-up">
-        <article class="project-card" data-accent="purple">
-          <span class="eyebrow dev">Dev</span>
-          <h2>Lead frontend dev at Care Continuity, plus side projects.</h2>
-          <p class="page-copy">
-            React, TypeScript, and a focus on interfaces that hold up under real-world pressure. Also: a music transcription app, a pixel art generator, and an AI platformer.
-          </p>
-          <a href={withBase('/dev')} class="inline-link">See dev projects →</a>
-        </article>
 
-        <article class="project-card" data-accent="teal">
-          <span class="eyebrow music">Music</span>
-          <h2>Drummer in Seattle bands for a decade.</h2>
-          <p class="page-copy">
-            Maps on Fire, Black Giraffe, Luminol, Read Underwater. Rock, soul, ambient, and everything in between. All on Bandcamp.
-          </p>
-          <a href={withBase('/music')} class="inline-link">See music projects →</a>
-        </article>
-      </section>
     </main>
     <Footer />
   </body>
 </html>
+
+<style>
+  /* ── Hero ─────────────────────────────────────── */
+  .hero-section {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 4rem;
+    align-items: center;
+    padding: clamp(3rem, 6vw, 5rem) 0;
+  }
+
+  .hero-content {
+    display: grid;
+    gap: 1.75rem;
+    align-content: start;
+    min-width: 0;
+  }
+
+
+  .hero-title {
+    font-size: clamp(3rem, 6.5vw, 5.8rem);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  /* ── Geometric composition ───────────────────── */
+  .hero-geo {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 4 / 4.2;
+    margin-left: auto;
+  }
+
+  .geo {
+    position: absolute;
+    transition: transform 8s ease-in-out;
+  }
+
+  /* Large circle — mauve, background anchor */
+  .geo-circle {
+    width: 68%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--mauve);
+    opacity: 0.38;
+    right: 0;
+    top: 8%;
+    animation: geo-drift-1 12s ease-in-out infinite;
+  }
+
+  /* Tall rectangle — sage */
+  .geo-rect {
+    width: 38%;
+    height: 58%;
+    background: var(--sage);
+    opacity: 0.38;
+    left: 6%;
+    bottom: 6%;
+    animation: geo-drift-2 15s ease-in-out infinite;
+  }
+
+  /* Small square — terracotta */
+  .geo-rect-sm {
+    width: 22%;
+    height: 22%;
+    background: var(--terra);
+    opacity: 0.55;
+    right: 16%;
+    bottom: 18%;
+    animation: geo-drift-3 10s ease-in-out infinite;
+  }
+
+  /* Dot — indigo */
+  .geo-dot {
+    width: 14%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--indigo);
+    opacity: 0.65;
+    left: 36%;
+    top: 14%;
+    animation: geo-drift-1 9s ease-in-out infinite reverse;
+  }
+
+  /* Hairline — structural accent */
+  .geo-line {
+    width: 1px;
+    height: 55%;
+    background: var(--border-strong);
+    opacity: 0.5;
+    left: 50%;
+    top: 0;
+    transform-origin: top center;
+    animation: geo-drift-2 14s ease-in-out infinite reverse;
+  }
+
+  @keyframes geo-drift-1 {
+    0%, 100% { transform: translateY(0)    rotate(0deg); }
+    40%      { transform: translateY(-10px) rotate(2deg); }
+    70%      { transform: translateY(-4px)  rotate(-1deg); }
+  }
+
+  @keyframes geo-drift-2 {
+    0%, 100% { transform: translateY(0)   rotate(0deg); }
+    35%      { transform: translateY(8px) rotate(-1.5deg); }
+    65%      { transform: translateY(3px) rotate(1deg); }
+  }
+
+  @keyframes geo-drift-3 {
+    0%, 100% { transform: translate(0, 0)     rotate(0deg); }
+    50%      { transform: translate(-6px, -8px) rotate(6deg); }
+  }
+
+  /* ── Responsive ───────────────────────────────── */
+  @media (max-width: 1200px) {
+    .hero-section {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+    .hero-geo {
+      max-width: 280px;
+      margin-left: 0;
+      aspect-ratio: 4 / 3;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .hero-geo { display: none; }
+  }
+</style>

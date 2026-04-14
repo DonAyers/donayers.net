@@ -81,6 +81,12 @@ export const DevCollection: Collection = {
       type: "boolean",
     },
     {
+      name: "order",
+      label: "Display Order",
+      type: "number",
+      description: "Lower numbers appear first on the Code page.",
+    },
+    {
       type: "rich-text",
       name: "body",
       label: "Project Details",

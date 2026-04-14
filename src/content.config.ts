@@ -98,6 +98,7 @@ const dev = defineCollection({
     liveUrl: z.string().nullish(),
     status: z.string().nullish(),
     featured: z.boolean().nullish(),
+    order: z.number().nullish(),
   }),
 });
 

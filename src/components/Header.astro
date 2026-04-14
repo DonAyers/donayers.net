@@ -1,123 +1,192 @@
 ---
-import HeaderLink from './HeaderLink.astro';
-import config from '../content/config/config.json';
-import IconLink from './react/IconLink';
 import { withBase } from '../utils/withBase';
+import config from '../content/config/config.json';
+
+const sections = [
+  { label: 'Code',  href: '/dev'   },
+  { label: 'Music', href: '/music' },
+  { label: 'Notes', href: '/blog'  },
+];
+
+const pathname = Astro.url.pathname.replace(import.meta.env.BASE_URL, '');
+const activeSection = sections.find(s => pathname.startsWith(s.href));
 ---
 
-<header class="site-shell site-header-wrap">
-  <nav class="site-panel site-header" aria-label="Primary">
-    <a class="brand-mark" href={withBase('/')}>
-      <span class="brand-chip">DA</span>
-      <span>
-        <strong>{config.seo.title}</strong>
-        <small>Code / Music / Notes</small>
-      </span>
-    </a>
-    <div class="nav-links">
-      {config.nav.map((nav) => <HeaderLink href={nav.link}>{nav.title}</HeaderLink>)}
-    </div>
-    {config.contactLinks?.length > 0 && (
-      <div class="social-links">
-        {config.contactLinks.map(({ title, icon, link }) => (
-          <IconLink title={title} icon={icon} link={link.startsWith('/') ? withBase(link) : link} />
+<header transition:persist transition:animate="none" class="site-shell site-header-wrap">
+  <nav class="site-header" aria-label="Primary">
+    <div class="brand-mark">
+      <a class="brand-name" href={withBase('/')}>{config.seo.title}</a>
+      <nav class="brand-nav" aria-label="Site sections">
+        {sections.map((s, i) => (
+          <>
+            <a
+              href={withBase(s.href)}
+              class:list={['brand-nav-link', { active: activeSection?.href === s.href }]}
+            >{s.label}</a>
+            {i < sections.length - 1 && <span class="brand-nav-sep" aria-hidden="true">/</span>}
+          </>
         ))}
-      </div>
-    )}
+      </nav>
+    </div>
+
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <span class="toggle-inner" aria-hidden="true"></span>
+    </button>
   </nav>
 </header>
 
+<script>
+  function syncActiveNav() {
+    const path = window.location.pathname.replace(/\/$/, '');
+    document.querySelectorAll<HTMLAnchorElement>('.brand-nav-link').forEach(link => {
+      const href = link.getAttribute('href')?.replace(/\/$/, '') ?? '';
+      const isActive = href !== '' && (path === href || path.startsWith(href + '/'));
+      link.classList.toggle('active', isActive);
+    });
+  }
+
+  function getEffectiveTheme(): string {
+    const attr = document.documentElement.getAttribute('data-theme');
+    if (attr === 'dark' || attr === 'light') return attr;
+    // No explicit choice — derive from system
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function setTheme(theme: string) {
+    const systemIsDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const systemTheme  = systemIsDark ? 'dark' : 'light';
+
+    if (theme === systemTheme) {
+      // User picked what the system already provides — clear the override
+      // so the CSS media query takes over naturally
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.removeItem('theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+  }
+
+  function toggleTheme() {
+    setTheme(getEffectiveTheme() === 'dark' ? 'light' : 'dark');
+  }
+
+  function init() {
+    syncActiveNav();
+    document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+  }
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>
+
 <style>
   .site-header-wrap {
-    padding-top: 1rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .site-header {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
-    gap: 1rem;
+    justify-content: space-between;
   }
 
   .brand-mark {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.85rem;
-    text-decoration: none;
-  }
-
-  .brand-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border: 3px solid var(--border);
-    background: var(--brand-4);
-    box-shadow: 4px 4px 0 rgba(31, 34, 48, 0.12);
-    font-family: 'Silkscreen', sans-serif;
-    font-size: 0.9rem;
-  }
-
-  .brand-mark strong,
-  .brand-mark small {
-    display: block;
-  }
-
-  .brand-mark strong {
-    font-family: 'Silkscreen', sans-serif;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-  }
-
-  .brand-mark small {
-    margin-top: 0.2rem;
-    color: var(--muted);
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .nav-links,
-  .social-links {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .brand-name {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.25rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--text);
+    line-height: 1.1;
+    text-decoration: none;
+    transition: opacity 150ms ease;
+  }
+
+  .brand-name:hover {
+    opacity: 0.6;
+  }
+
+  .brand-nav {
+    display: flex;
     align-items: center;
+    gap: 0.35rem;
   }
 
-  .nav-links {
-    justify-content: center;
+  .brand-nav-link {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.57rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 150ms ease;
+    position: relative;
   }
 
-  .social-links :global(a) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 2px solid var(--border);
-    background: #fff;
-    box-shadow: 4px 4px 0 rgba(31, 34, 48, 0.08);
+  .brand-nav-link:hover { color: var(--text); }
+
+  .brand-nav-link.active { color: var(--text); }
+
+  .brand-nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: currentColor;
   }
 
-  .social-links :global(a:hover) {
-    transform: translate(-1px, -1px);
+  .brand-nav-sep {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.57rem;
+    color: var(--border-strong);
+    user-select: none;
   }
 
-  @media (max-width: 900px) {
-    .site-header {
-      grid-template-columns: 1fr;
-    }
-
-    .nav-links {
-      justify-content: flex-start;
-    }
+  /* ── Theme toggle ─────────────────────────────── */
+  .theme-toggle {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-strong);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: border-color 200ms ease, opacity 200ms ease;
   }
 
-  @media (max-width: 640px) {
-    .brand-mark {
-      align-items: flex-start;
-    }
+  .theme-toggle:hover {
+    opacity: 0.7;
+  }
+
+  /* Half-circle indicator — left half filled in light mode */
+  .toggle-inner {
+    display: block;
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: linear-gradient(
+      to right,
+      var(--text) 50%,
+      transparent 50%
+    );
+    transition: transform 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Rotate 180° in dark mode so the filled half is on the right */
+  :global([data-theme="dark"]) .toggle-inner {
+    transform: rotate(180deg);
   }
 </style>

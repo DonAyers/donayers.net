@@ -15,12 +15,23 @@ const { title, description, image = '/blog-placeholder-1.jpg' } = Astro.props;
 const imageUrl = withBase(image);
 ---
 
+<!-- Theme init: runs before paint to prevent flash of wrong theme.
+     Only sets data-theme when the user has made an explicit choice;
+     otherwise the CSS @media query handles system preference natively. -->
+<script is:inline>
+  (function () {
+    var stored = localStorage.getItem('theme');
+    if (stored === 'dark' || stored === 'light') {
+      document.documentElement.setAttribute('data-theme', stored);
+    }
+  })();
+</script>
 <meta charset="utf-8" />
 <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" type="image/svg+xml" href={withBase('/favicon.svg')} />
 <meta name="generator" content={Astro.generator} />
-<meta name="theme-color" content="#6956ff" />
+<meta name="theme-color" content="#faf6f0" />
 
 
 <link rel="canonical" href={canonicalURL} />

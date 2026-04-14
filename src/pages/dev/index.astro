@@ -5,7 +5,9 @@ import Header from '../../components/Header.astro';
 import Footer from '../../components/Footer.astro';
 import { withBase } from '../../utils/withBase';
 
-const devProjects = await getCollection('dev');
+const devProjects = (await getCollection('dev')).sort(
+  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99)
+);
 ---
 
 <!doctype html>
@@ -13,17 +15,17 @@ const devProjects = await getCollection('dev');
   <head>
     <BaseHead title="Dev | Don Ayers" description="Development work and case studies from Don Ayers." />
   </head>
-  <body class="grid-bg">
+  <body>
     <Header />
     <main class="site-shell page-stack">
-      <section class="site-panel" style="display:grid; gap:1rem;">
+      <section class="site-panel" style="display:grid; gap:1.25rem;">
         <span class="eyebrow dev">Dev</span>
         <div class="section-heading">
           <div style="display:grid; gap:0.75rem;">
             <h1>Professional work, open source projects, and experiments.</h1>
             <p class="page-copy">Lead frontend dev at Care Continuity, plus side projects on GitHub. React, TypeScript, and whatever the problem actually needs.</p>
           </div>
-          <span class="stat-pill"><strong>{devProjects.length}</strong> projects</span>
+          <span class="stat-pill"><strong>{devProjects.length}</strong>&nbsp;projects</span>
         </div>
       </section>
 
@@ -31,11 +33,11 @@ const devProjects = await getCollection('dev');
         {devProjects.map((project) => (
           <article class="project-card" data-accent="purple">
             <div class="section-heading">
-              <div style="display:grid; gap:0.55rem;">
+              <div style="display:grid; gap:0.5rem;">
                 <h2>{project.data.title}</h2>
-                {project.data.tech && <p class="card-meta">{project.data.tech.join(' / ')}</p>}
+                {project.data.tech && <p class="card-meta">{project.data.tech.join(' · ')}</p>}
               </div>
-              {project.data.status && <span class="tag-pill"><strong>Status</strong> {project.data.status}</span>}
+              {project.data.status && <span class="tag-pill"><strong>Status</strong>&nbsp;{project.data.status}</span>}
             </div>
             {project.data.description && <p class="page-copy">{project.data.description}</p>}
             <div class="card-links">
