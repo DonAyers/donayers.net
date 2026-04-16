@@ -17,13 +17,20 @@ const imageUrl = withBase(image);
 
 <!-- Theme init: runs before paint to prevent flash of wrong theme.
      Only sets data-theme when the user has made an explicit choice;
-     otherwise the CSS @media query handles system preference natively. -->
+     otherwise the CSS @media query handles system preference natively.
+     Also re-applies after Astro view-transition swaps, which wipe HTML attributes. -->
 <script is:inline>
   (function () {
-    var stored = localStorage.getItem('theme');
-    if (stored === 'dark' || stored === 'light') {
-      document.documentElement.setAttribute('data-theme', stored);
+    function applyStoredTheme() {
+      var stored = localStorage.getItem('theme');
+      if (stored === 'dark' || stored === 'light') {
+        document.documentElement.setAttribute('data-theme', stored);
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
     }
+    applyStoredTheme();
+    document.addEventListener('astro:after-swap', applyStoredTheme);
   })();
 </script>
 <meta charset="utf-8" />

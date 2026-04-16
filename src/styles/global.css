@@ -1,36 +1,56 @@
 @import 'tailwindcss';
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
+/* ── Design tokens ────────────────────────────────
+   light-dark() picks the right value based on color-scheme.
+   The inline <head> script sets [data-theme="dark|light"] which
+   overrides color-scheme, giving the toggle instant authority over
+   both the system-preference path and the explicit-choice path.
+   Requires Chrome 123+, Firefox 120+, Safari 17.5+.
+   ──────────────────────────────────────────────── */
 :root {
-  --bg:      #faf6f0;
-  --bg-2:    #ede8df;
-  --surface: rgba(250, 246, 240, 0.96);
-  --text:    #1e1a16;
-  --muted:   #7c7568;
-  --faint:   rgba(30, 26, 22, 0.05);
+  color-scheme: light dark;
 
-  --terra:   #9b5f4e;
-  --sage:    #7aa87e;
-  --mauve:   #b8a4bc;
-  --indigo:  #8c80bc;
+  /* Backgrounds */
+  --bg:      light-dark(#faf6f0, #1c1814);
+  --bg-2:    light-dark(#ede8df, #141210);
+  --surface: light-dark(rgba(250, 246, 240, 0.96), rgba(28, 24, 20, 0.96));
 
-  --border:        rgba(30, 26, 22, 0.10);
-  --border-strong: rgba(30, 26, 22, 0.24);
+  /* Typography */
+  --text:    light-dark(#1e1a16, #ede8df);
+  --muted:   light-dark(#7c7568,  #8a8070);
+  --faint:   light-dark(rgba(30, 26, 22, 0.05), rgba(237, 232, 223, 0.05));
 
-  --shadow-sm: 0 2px 12px rgba(30, 26, 22, 0.05);
-  --shadow-md: 0 8px 40px rgba(30, 26, 22, 0.09);
+  /* Palette */
+  --terra:   light-dark(#9b5f4e, #b86e5c);
+  --sage:    light-dark(#7aa87e, #8ec494);
+  --mauve:   light-dark(#b8a4bc, #c9b0cc);
+  --indigo:  light-dark(#8c80bc, #a49ad0);
 
-  /* compat aliases used by pages / components */
+  /* Borders */
+  --border:        light-dark(rgba(30, 26, 22, 0.10), rgba(237, 232, 223, 0.09));
+  --border-strong: light-dark(rgba(30, 26, 22, 0.24), rgba(237, 232, 223, 0.20));
+
+  /* Shadows */
+  --shadow-sm: light-dark(0 2px 12px rgba(30, 26, 22, 0.05), 0 2px 12px rgba(0, 0, 0, 0.25));
+  --shadow-md: light-dark(0 8px 40px rgba(30, 26, 22, 0.09), 0 8px 40px rgba(0, 0, 0, 0.35));
+
+  /* Body background accent stops — vary opacity between themes */
+  --bg-accent-mauve: light-dark(rgba(184, 164, 188, 0.22), rgba(184, 164, 188, 0.07));
+  --bg-accent-sage:  light-dark(rgba(122, 168, 126, 0.16), rgba(122, 168, 126, 0.05));
+  --bg-accent-terra: light-dark(rgba(155, 95, 78, 0.07), transparent);
+
+  /* Compat aliases used by pages / components */
   --brand:        var(--indigo);
   --brand-2:      var(--sage);
   --brand-3:      var(--terra);
   --brand-4:      var(--mauve);
   --panel:        var(--surface);
-  --panel-strong: rgba(250, 246, 240, 0.98);
+  --panel-strong: light-dark(rgba(250, 246, 240, 0.98), rgba(28, 24, 20, 0.98));
   --shadow:       none;
   --shadow-soft:  var(--shadow-md);
 
-  /* legacy pixel vars — kept so nothing breaks; values are no-ops */
+  /* Legacy pixel vars — kept so nothing breaks */
   --pixel-size: 0px;
   --black: 30, 26, 22;
   --accent: 140, 128, 188;
@@ -40,68 +60,10 @@
 }
 
 * { box-sizing: border-box; }
-/* ── Dark mode ────────────────────────────────── */
-/* 1. System preference — applies when no explicit user choice is stored.
-      :not([data-theme]) matches when the inline <head> script found nothing
-      in localStorage and left the attribute unset. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:      #1c1814;
-    --bg-2:    #141210;
-    --surface: rgba(28, 24, 20, 0.96);
-    --text:    #ede8df;
-    --muted:   #8a8070;
-    --faint:   rgba(237, 232, 223, 0.05);
-    --terra:   #b86e5c;
-    --sage:    #8ec494;
-    --mauve:   #c9b0cc;
-    --indigo:  #a49ad0;
-    --border:        rgba(237, 232, 223, 0.09);
-    --border-strong: rgba(237, 232, 223, 0.20);
-    --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
-    --shadow-md: 0 8px 40px rgba(0, 0, 0, 0.35);
-    --panel:        var(--surface);
-    --panel-strong: rgba(28, 24, 20, 0.98);
-  }
 
-  :root:not([data-theme="light"]) body {
-    background:
-      radial-gradient(ellipse 75% 50% at 96% 2%,  rgba(184, 164, 188, 0.07), transparent),
-      radial-gradient(ellipse 60% 60% at 2%  88%,  rgba(122, 168, 126, 0.05), transparent),
-      linear-gradient(170deg, #1c1814 0%, #141210 100%);
-  }
-}
-
-/* 2. Explicit user choice — overrides system preference in both directions. */
-[data-theme="dark"] {
-  --bg:      #1c1814;
-  --bg-2:    #141210;
-  --surface: rgba(28, 24, 20, 0.96);
-  --text:    #ede8df;
-  --muted:   #8a8070;
-  --faint:   rgba(237, 232, 223, 0.05);
-
-  --terra:   #b86e5c;
-  --sage:    #8ec494;
-  --mauve:   #c9b0cc;
-  --indigo:  #a49ad0;
-
-  --border:        rgba(237, 232, 223, 0.09);
-  --border-strong: rgba(237, 232, 223, 0.20);
-
-  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 8px 40px rgba(0, 0, 0, 0.35);
-
-  --panel:        var(--surface);
-  --panel-strong: rgba(28, 24, 20, 0.98);
-}
-
-[data-theme="dark"] body {
-  background:
-    radial-gradient(ellipse 75% 50% at 96% 2%,  rgba(184, 164, 188, 0.07), transparent),
-    radial-gradient(ellipse 60% 60% at 2%  88%,  rgba(122, 168, 126, 0.05), transparent),
-    linear-gradient(170deg, var(--bg) 0%, var(--bg-2) 100%);
-}
+/* Explicit user toggle: force color-scheme so light-dark() follows the choice */
+[data-theme="dark"]  { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
 
 html { scroll-behavior: smooth; scrollbar-gutter: stable; background: var(--bg-2); }
 
@@ -114,9 +76,9 @@ body {
   font-weight: 300;
   color: var(--text);
   background:
-    radial-gradient(ellipse 75% 50% at 96% 2%,  rgba(184, 164, 188, 0.22), transparent),
-    radial-gradient(ellipse 60% 60% at 2%  88%,  rgba(122, 168, 126, 0.16), transparent),
-    radial-gradient(ellipse 50% 45% at 50% 105%, rgba(155, 95, 78, 0.07),   transparent),
+    radial-gradient(ellipse 75% 50% at 96% 2%,  var(--bg-accent-mauve), transparent),
+    radial-gradient(ellipse 60% 60% at 2%  88%,  var(--bg-accent-sage),  transparent),
+    radial-gradient(ellipse 50% 45% at 50% 105%, var(--bg-accent-terra), transparent),
     linear-gradient(170deg, var(--bg) 0%, var(--bg-2) 100%);
   line-height: 1.75;
   overflow-x: hidden;
@@ -143,8 +105,11 @@ ul, ol { margin: 0; padding: 0; }
 
 /* ── Layout ───────────────────────────────────── */
 .site-shell {
-  width: min(1100px, calc(100% - 2.5rem));
+  max-width: 1100px;
+  width: 100%;
   margin: 0 auto;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
 }
 
 .page-stack {
@@ -254,21 +219,28 @@ button.pixel-button:active { opacity: 0.8; }
   border-color: var(--border-strong);
 }
 
-/* In dark mode, a cream-filled button looks like a light-theme intruder.
-   Use an outlined style instead — border-color matches --text (warm cream). */
-[data-theme="dark"] .pixel-button.primary,
+/* In dark mode, a filled primary button reads as a light-theme intruder.
+   Swap to an outlined style. Both the explicit toggle and system preference
+   paths are covered since light-dark() drives color-scheme. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .pixel-button.primary {
     background: transparent;
     color: var(--text);
     border-color: var(--text);
   }
-}
-[data-theme="dark"] .pixel-button.primary:hover,
-@media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .pixel-button.primary:hover {
     background: var(--faint);
+    border-color: var(--text);
   }
+}
+[data-theme="dark"] .pixel-button.primary {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--text);
+}
+[data-theme="dark"] .pixel-button.primary:hover {
+  background: var(--faint);
+  border-color: var(--text);
 }
 
 .pixel-button.mint {
@@ -498,7 +470,7 @@ button.pixel-button:active { opacity: 0.8; }
 }
 
 @media (max-width: 720px) {
-  .site-shell { width: min(100%, calc(100% - 1.5rem)); }
+  .site-shell { padding-left: 1rem; padding-right: 1rem; }
   .page-stack { padding-bottom: 4rem; }
   .pixel-button, button.pixel-button { width: 100%; justify-content: center; }
   .button-row { flex-direction: column; }
