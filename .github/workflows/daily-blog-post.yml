@@ -1,0 +1,122 @@
+name: Generate daily blog post
+
+"on":
+  schedule:
+    - cron: '15 13 * * *'
+  workflow_dispatch:
+    inputs:
+      prompt_override:
+        description: Optional extra guidance for a manual run
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-blog-post
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      COPILOT_MODEL: gpt-5.2
+      TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Generate article
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_PAT }}
+          PROMPT_OVERRIDE: ${{ github.event.inputs.prompt_override || '' }}
+        run: |
+          if [ -z "${COPILOT_GITHUB_TOKEN}" ]; then
+            echo "Missing required COPILOT_CLI_PAT secret." >&2
+            exit 1
+          fi
+
+          target_date="$(date -u +%F)"
+          target_file="src/content/blog/${target_date}-daily-note.mdx"
+          pub_date="${target_date}T00:00:00.000Z"
+          base_prompt="$(cat .github/prompts/daily-blog-post.md)"
+
+          if [ -n "${PROMPT_OVERRIDE}" ]; then
+            extra_prompt=$'\n\nAdditional instruction for this run:\n'"${PROMPT_OVERRIDE}"
+          else
+            extra_prompt=""
+          fi
+
+          cat <<EOF >/tmp/daily-blog-post-prompt.txt
+          Today is ${target_date}.
+
+          Read the existing posts in src/content/blog and then create or update exactly one file at ${target_file}.
+
+          The file must be valid MDX with YAML frontmatter and body content.
+
+          Required frontmatter:
+          - title
+          - description
+          - pubDate
+
+          Frontmatter rules:
+          - Set pubDate to ${pub_date}.
+          - Keep description to one sentence.
+          - Do not add fields outside the existing blog schema unless the repo already uses them.
+
+          Writing rules:
+          - Match the direct, first-person voice already used on donayers.net.
+          - Make the piece feel like a real blog post for this site, not a generic content sample.
+          - Keep it specific, reflective, and ready to publish.
+          - Do not mention AI, automation, prompts, or that the article was generated.
+          - If the file already exists for today, replace it with a fresh version.
+
+          Core prompt:
+          ${base_prompt}${extra_prompt}
+          EOF
+
+          copilot -p "$(cat /tmp/daily-blog-post-prompt.txt)" \
+            -s \
+            --model "${COPILOT_MODEL}" \
+            --allow-tool='read,write' \
+            --add-dir "$PWD" \
+            --no-ask-user
+
+      - name: Verify generated article
+        run: |
+          target_file="src/content/blog/$(date -u +%F)-daily-note.mdx"
+          test -s "${target_file}"
+
+          {
+            echo "Generated \`${target_file}\`"
+            echo
+            echo '```mdx'
+            sed -n '1,40p' "${target_file}"
+            echo '```'
+          } >>"${GITHUB_STEP_SUMMARY}"
+
+      - name: Commit and push article
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/content/blog
+
+          if git diff --cached --quiet; then
+            echo "No article changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Add daily blog article for $(date -u +%F)"
+          git push origin HEAD:"${TARGET_BRANCH}"
