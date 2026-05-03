@@ -11,6 +11,7 @@ Content guidance:
 - Try to get underneath the talking points and ask what people are really trying to say, where the world seems to be going, and how we may be missing the point.
 - Write something that counters bad-faith negativity with clarity, empathy, honesty, and a constructive human perspective.
 - Keep it reflective and publishable without sounding overly polished or preachy.
+- Avoid moralizing or telling the reader what to think; invite reflection instead of delivering a sermon.
 - Avoid lists unless they genuinely fit the piece.
 
 Hard constraints:
