@@ -68,6 +68,14 @@ Visit `http://localhost:4321/admin` to access the CMS.
 - The Pages build targets the custom domain `https://donayers.net`.
 - `public/CNAME` is committed so GitHub Pages can keep the custom domain attached to the site artifact.
 
+## Scheduled daily blog draft
+
+- `.github/workflows/daily-blog-post.yml` runs once per day and can also be triggered manually from the Actions tab.
+- The workflow installs GitHub Copilot CLI, reads `.github/prompts/daily-blog-post.md`, and writes or refreshes `src/content/blog/YYYY-MM-DD-daily-note.mdx`.
+- When the generated post changes, the workflow commits it to the repository default branch, which in turn triggers the existing Pages deploy workflow.
+- Add a repository secret named `COPILOT_CLI_PAT` backed by a fine-grained personal access token with the **Copilot Requests** permission for an account that has GitHub Copilot access.
+- Manual runs can supply a `prompt_override` input to steer a one-off post without changing the default daily prompt file.
+
 ## License
 
 MIT
