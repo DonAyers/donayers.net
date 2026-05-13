@@ -55,9 +55,59 @@ const userPrompt = `Write a post about: ${theme}`;
 
 let content;
 
-if (process.env.ANTHROPIC_API_KEY) {
-  // Anthropic path — used when ANTHROPIC_API_KEY secret is set
-  console.log("Provider: anthropic");
+if (process.env.COPILOT_GITHUB_TOKEN) {
+  // GitHub Copilot path — uses COPILOT_CLI_PAT secret
+  console.log("Provider: github-copilot (claude-opus-4-7)");
+  console.log(`Theme: ${theme}`);
+
+  // Step 1: Exchange PAT for a short-lived Copilot session token
+  const tokenResp = await fetch("https://api.github.com/copilot_internal/v2/token", {
+    headers: {
+      "Authorization": `Bearer ${process.env.COPILOT_GITHUB_TOKEN}`,
+      "Accept": "application/json",
+    },
+  });
+
+  if (!tokenResp.ok) {
+    const err = await tokenResp.text();
+    console.error(`Copilot token exchange failed ${tokenResp.status}: ${err}`);
+    process.exit(1);
+  }
+
+  const { token: sessionToken } = await tokenResp.json();
+
+  // Step 2: Chat completions
+  const resp = await fetch("https://api.githubcopilot.com/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${sessionToken}`,
+      "Copilot-Integration-Id": "vscode-chat",
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-opus-4-7",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_tokens: 1024,
+      stream: false,
+    }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.text();
+    console.error(`Copilot chat API failed ${resp.status}: ${err}`);
+    process.exit(1);
+  }
+
+  const data = await resp.json();
+  content = data.choices[0].message.content.trim();
+
+} else if (process.env.ANTHROPIC_API_KEY) {
+  // Anthropic fallback — used when COPILOT_CLI_PAT is not set
+  console.log("Provider: anthropic (claude-opus-4-7)");
   console.log(`Theme: ${theme}`);
 
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
@@ -69,42 +119,10 @@ if (process.env.ANTHROPIC_API_KEY) {
     messages: [{ role: "user", content: userPrompt }],
   });
   content = message.content[0].text.trim();
+
 } else {
-  // GitHub Models path — default, uses COPILOT_CLI_PAT or GITHUB_TOKEN
-  const token = process.env.GITHUB_MODELS_TOKEN;
-  if (!token) {
-    console.error("No token available. Set GITHUB_MODELS_TOKEN or ANTHROPIC_API_KEY.");
-    process.exit(1);
-  }
-
-  console.log("Provider: github-models (openai/gpt-4.1)");
-  console.log(`Theme: ${theme}`);
-
-  const response = await fetch("https://models.github.ai/inference/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "Accept": "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2026-03-10",
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-4.1",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error(`GitHub Models API error ${response.status}: ${error}`);
-    process.exit(1);
-  }
-
-  const data = await response.json();
-  content = data.choices[0].message.content.trim();
+  console.error("No credentials found. Set COPILOT_CLI_PAT or ANTHROPIC_API_KEY as a repo secret.");
+  process.exit(1);
 }
 
 // Extract title to build filename slug

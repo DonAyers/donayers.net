@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  models: read  # allows GITHUB_TOKEN to access GitHub Models API
 
 jobs:
   generate:
@@ -27,9 +26,9 @@ jobs:
 
       - name: Generate blog post
         env:
-          # GitHub Models (default): prefers COPILOT_CLI_PAT, falls back to GITHUB_TOKEN
-          GITHUB_MODELS_TOKEN: ${{ secrets.COPILOT_CLI_PAT || github.token }}
-          # Anthropic (fallback): only used if ANTHROPIC_API_KEY secret is set
+          # Primary: GitHub Copilot via COPILOT_CLI_PAT
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_PAT }}
+          # Fallback: Anthropic API directly (only used if COPILOT_CLI_PAT is not set)
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node .github/scripts/generate-post.js
 
