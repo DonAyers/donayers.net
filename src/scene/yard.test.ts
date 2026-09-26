@@ -16,6 +16,8 @@ function extents(width: number, height: number) {
       bedB: [c.bedB.x - BED_B_WIDTH / 2, c.bedB.x + BED_B_WIDTH / 2],
       calico: [c.spots.calico.x - 8, c.spots.calico.x + 8],
       tabby: [c.spots.tabby.x - 10, c.spots.tabby.x + 10],
+      downtown: [layout.downtown - 48, layout.downtown + 44],
+      patio: [c.patio.x - c.patio.front - 1, c.patio.x + c.patio.front + 1],
     },
   };
 }
@@ -39,18 +41,25 @@ for (const [name, w, h, dpr] of PHONES) {
   });
 }
 
-test("desktop keeps the original wide arrangement", () => {
+test("desktop keeps the wide arrangement, with the lime tree clear of downtown", () => {
   const layout = createLayout(384, 216);
   const c = composition(384, layout.yard.top, layout.yard.bottom);
   expect(c.tall).toBe(false);
-  expect([c.lime.x, c.lemon.x, c.bedA.x, c.bedB.x]).toEqual([62, 320, 142, 240]);
+  expect([c.lime.x, c.lemon.x, c.bedA.x, c.bedB.x]).toEqual([322, 64, 122, 258]);
+  expect(layout.downtown + 44).toBeLessThan(c.lime.x - 21); // skyline ends before the lime canopy starts
 });
 
 test("in portrait the beds are staggered front to back, not side by side", () => {
   const fit = fitPixels(390, 844, 3);
   const layout = createLayout(fit.width, fit.height);
   const c = composition(fit.width, layout.yard.top, layout.yard.bottom);
-  expect(c.bedB.y - c.bedA.y).toBeGreaterThan(15);
+  expect(Math.abs(c.bedB.y - c.bedA.y)).toBeGreaterThan(15);
+  // The tall tomato/cucumber bed is the front one, so its trellis can't hide the gate.
+  expect(c.bedA.y).toBeGreaterThan(c.bedB.y);
   expect(c.lime.y).toBeLessThan(c.bedA.y); // trees at the back
-  expect(c.spots.calico.y).toBeGreaterThan(c.bedB.y); // cats up front
+  expect(c.spots.calico.y).toBeGreaterThan(Math.max(c.bedA.y, c.bedB.y)); // cats up front
+  // Back to front down the middle: gate, terrazzo, then the path to the front.
+  expect(c.patio.bottom).toBeLessThan(Math.min(c.bedA.y, c.bedB.y));
+  expect(c.path.top).toBeGreaterThan(c.patio.bottom);
+  expect(c.path.bottom).toBe(layout.yard.bottom);
 });

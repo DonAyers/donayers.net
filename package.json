@@ -11,6 +11,7 @@
     "preview": "bun scripts/preview.ts",
     "test": "bun test",
     "snapshot": "bun scripts/snapshot.ts",
+    "art": "bun scripts/art.ts",
     "typecheck": "tsc --noEmit"
   },
   "type": "module"

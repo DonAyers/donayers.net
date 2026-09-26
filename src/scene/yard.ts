@@ -1,6 +1,9 @@
-// The back yard in front of the wall: a lime tree, a potted lemon, two raised
-// beds (San Marzano tomato + Japanese cucumber; chilis) and two cats.
+// The back yard in front of the wall. Down the middle, back to front: the
+// gate (drawn with the wall), a terrazzo patio, then a slab path. Around it: a
+// lime tree, a potted lemon, a bougainvillea spilling over the back-right
+// corner, and two raised beds (San Marzano tomato + Japanese cucumber; chilis).
 // Positions are designed for a 384px-wide scene and spread to fit others.
+import { art, drawArt } from "./art.ts";
 import { type RGB, hex } from "./color.ts";
 import { BAYER, type Pixels, hash2, rng, sprite } from "./pixels.ts";
 import { isTall } from "./viewport.ts";
@@ -13,9 +16,22 @@ const C = {
   grassDark: hex("#467030"),
   grassLight: hex("#78a84a"),
   shadow: hex("#34522a"),
-  stone: hex("#a8a298"),
-  stoneLight: hex("#c8c2b6"),
-  stoneDark: hex("#86807a"),
+  terrazzo: hex("#e2e0da"),
+  terrazzoLight: hex("#eceae4"),
+  terrazzoDark: hex("#d4d1c9"),
+  chipGrey: hex("#9e9a92"),
+  chipWarm: hex("#c4ab8e"),
+  chipDark: hex("#6e6a64"),
+  grout: hex("#b4b0a6"),
+  edging: hex("#8a623e"),
+  edgingLight: hex("#a87a50"),
+  slab: hex("#b2b0aa"),
+  slabLight: hex("#c6c4be"),
+  slabDark: hex("#8e8c86"),
+  bougainvillea: hex("#d6208a"),
+  bougainvilleaPink: hex("#f25cb0"),
+  bougainvilleaDeep: hex("#9c1266"),
+  bougainvilleaLight: hex("#ff9ad0"),
   soil: hex("#4a3526"),
   dirt: hex("#7a5a3e"),
   dirtLight: hex("#9a7a58"),
@@ -126,6 +142,121 @@ function groundShadow(px: Pixels, paint: Paint, cx: number, y: number, halfWidth
   px.rect(cx - halfWidth + 2, y + 1, halfWidth * 2 - 3, 1, paint(C.grassDark));
 }
 
+/**
+ * Terrazzo patio in front of the gate: big light square tiles (11×6 with 1px
+ * grout, squashed by perspective) flecked with chips, a touch wider at the
+ * front, finished with a wooden edge.
+ */
+function drawPatio(px: Pixels, paint: Paint, p: Composition["patio"]) {
+  const tones = [paint(C.terrazzo), paint(C.terrazzoLight), paint(C.terrazzoDark)];
+  const chips = [paint(C.chipGrey), paint(C.chipWarm), paint(C.chipDark)];
+  const grout = paint(C.grout);
+  const rows = p.bottom - p.top;
+  const halfAt = (y: number) => Math.round(p.back + ((p.front - p.back) * (y - p.top)) / rows);
+  for (let y = p.top; y < p.bottom; y++) {
+    const half = halfAt(y);
+    const row = Math.floor((y - p.top) / 7);
+    const inRow = (y - p.top) % 7;
+    for (let x = p.x - half; x <= p.x + half; x++) {
+      const lx = x - p.x + 300;
+      const col = Math.floor(lx / 12);
+      let color: number;
+      if (inRow === 6 || lx % 12 === 11) color = grout;
+      else if (hash2(x, y, 81) < 0.055) color = chips[Math.floor(hash2(x, y, 82) * 3)]!; // terrazzo chips
+      else color = tones[hash2(col, row, 71) < 0.7 ? 0 : hash2(col, row, 72) < 0.5 ? 1 : 2]!;
+      px.set(x, y, color);
+    }
+    px.set(p.x - half - 1, y, grout);
+    px.set(p.x + half + 1, y, grout);
+  }
+  // Wooden edging along the front, and its shadow on the ground.
+  const front = halfAt(p.bottom);
+  px.rect(p.x - front - 1, p.bottom, front * 2 + 3, 2, paint(C.edging));
+  px.rect(p.x - front - 1, p.bottom, front * 2 + 3, 1, paint(C.edgingLight));
+  px.rect(p.x - front, p.bottom + 2, front * 2 + 1, 1, paint(C.shadow));
+}
+
+/** A single line of concrete slabs, grass showing between them. */
+function drawPath(px: Pixels, paint: Paint, p: Composition["path"]) {
+  const left = p.x - Math.floor(p.width / 2);
+  for (let y = p.top + 2, i = 0; y < p.bottom; y += 8, i++) {
+    const h = Math.min(7, p.bottom - y);
+    px.rect(left, y, p.width, h, paint(C.slab));
+    px.rect(left, y, p.width, 1, paint(C.slabLight));
+    if (h === 7) px.rect(left, y + 6, p.width, 1, paint(C.slabDark));
+    px.set(left + 2 + ((i * 5) % (p.width - 4)), y + 3, paint(C.slabDark)); // a fleck of wear
+  }
+}
+
+interface Vine {
+  base: Point;
+  trunk: Point[];
+  blobs: Disk[];
+  strands: { x: number; y: number; len: number }[];
+  flowers: { x: number; y: number; kind: number }[];
+}
+
+/** A bougainvillea climbing the wall from `base`, its blooms spilling over the top. */
+function bougainvillea(random: () => number, base: Point, wallTop: number, span: number): Vine {
+  const trunkTop = { x: base.x - 6, y: wallTop - 2 };
+  const trunk = [base, { x: base.x - 2, y: Math.round((base.y + wallTop) / 2) }, trunkTop];
+  const blobs: Disk[] = [];
+  const count = Math.max(4, Math.round(span / 7));
+  for (let i = 0; i < count; i++) {
+    const x = base.x - span * 0.85 + (i / (count - 1)) * span * 1.2 + (random() - 0.5) * 6;
+    // Heavier near the trunk, trailing off along the wall.
+    const near = 1 - Math.min(1, Math.abs(x - trunkTop.x) / span);
+    blobs.push({ x, y: wallTop - 3 - near * 6 + (random() - 0.5) * 4, r: 4 + near * 5 + random() * 2 });
+  }
+  const strands = Array.from({ length: Math.round(span / 9) }, () => ({
+    x: Math.round(base.x - span * 0.75 + random() * span * 1.05),
+    y: wallTop + 1,
+    len: Math.round(5 + random() * (base.y - wallTop - 8)),
+  }));
+  const flowers: Vine["flowers"] = [];
+  for (const blob of blobs) {
+    for (let i = 0; i < blob.r * 2.2; i++) {
+      const a = random() * Math.PI * 2;
+      const d = Math.sqrt(random()) * (blob.r - 1);
+      flowers.push({ x: Math.round(blob.x + Math.cos(a) * d), y: Math.round(blob.y + Math.sin(a) * d * 0.8), kind: Math.floor(random() * 3) });
+    }
+  }
+  for (const s of strands) {
+    for (let y = 2; y < s.len; y += 3) if (random() < 0.6) flowers.push({ x: s.x + (random() < 0.5 ? -1 : 1), y: s.y + y, kind: Math.floor(random() * 3) });
+  }
+  return { base, trunk, blobs, strands, flowers };
+}
+
+function drawBougainvillea(px: Pixels, paint: Paint, v: Vine, t: number, wind: number) {
+  const bark = paint(C.bark);
+  for (let i = 1; i < v.trunk.length; i++) {
+    const a = v.trunk[i - 1]!;
+    const b = v.trunk[i]!;
+    px.line(a.x, a.y, b.x, b.y, bark);
+    px.line(a.x + 1, a.y, b.x + 1, b.y, bark);
+  }
+  const tones: [number, number, number] = [paint(C.leafDark), paint(C.leaf), paint(C.leafLight)];
+  // Strands hanging down the wall face, swinging a little at the tips.
+  for (const s of v.strands) {
+    const swing = Math.sin(t * 1.3 + s.x * 0.3) * wind;
+    for (let y = 0; y < s.len; y++) {
+      const x = Math.round(s.x + swing * (y / s.len) * 1.5);
+      px.set(x, s.y + y, y % 3 === 0 ? tones[1] : tones[0]);
+      if (y % 4 === 1) px.set(x + 1, s.y + y, tones[1]);
+    }
+  }
+  for (const [i, blob] of v.blobs.entries()) foliage(px, blob.x, blob.y, [{ x: 0, y: 0, r: blob.r }], tones, 90 + i);
+  const blooms = [paint(C.bougainvillea), paint(C.bougainvilleaPink), paint(C.bougainvilleaDeep)];
+  const light = paint(C.bougainvilleaLight);
+  for (const f of v.flowers) {
+    px.set(f.x, f.y, blooms[f.kind]!);
+    if (f.kind === 0) {
+      px.set(f.x + 1, f.y, blooms[0]!);
+      px.set(f.x, f.y - 1, light); // papery bracts catching the light
+    }
+  }
+}
+
 /** Front face of a wooden raised bed, with soil showing along the top. */
 function bed(px: Pixels, paint: Paint, left: number, base: number, width: number) {
   const h = 13;
@@ -152,13 +283,23 @@ interface Point {
   y: number;
 }
 
+/**
+ * An element that can be redrawn in Aseprite: its art id, and where custom art
+ * goes (bottom-centre pixel, one row below the base so it includes the shadow).
+ */
+export interface ArtSlot {
+  id: string;
+  x: number;
+  bottom: number;
+}
+
 export interface Yard {
   top: number;
   bottom: number;
   width: number;
   /** Stable grass texture: 0 dark, 1 base, 2 light. */
   grass: Uint8Array;
-  items: { depth: number; draw: Draw }[];
+  items: { depth: number; draw: Draw; art?: ArtSlot }[];
   /** Places the cats care about. */
   spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
 }
@@ -174,7 +315,12 @@ export interface Composition {
   bedA: Point;
   bedB: Point;
   dirt: Point;
-  stones: Point[];
+  /** Terrazzo patio in front of the gate: centre x, back and front edges (y), half-widths at each. */
+  patio: { x: number; top: number; bottom: number; back: number; front: number };
+  /** Concrete slab path from the patio down to the front of the yard. */
+  path: { x: number; top: number; bottom: number; width: number };
+  /** Where the bougainvillea's trunk meets the ground, in the back-right corner. */
+  bougainvillea: Point;
   spots: { calico: Point; tabby: Point; nap: Point[] };
 }
 
@@ -191,24 +337,36 @@ export function composition(width: number, top: number, bottom: number): Composi
   // [wide: offset from centre, depth] [tall: fraction of width, depth]
   const at = (wx: number, wd: number, tx: number, td: number): Point =>
     tall ? { x: Math.round(width * tx), y: Y(td) } : { x: Math.round(width / 2 + wx * spread), y: Y(wd) };
+  // Back to front down the middle: gate, terrazzo patio, then a slab path to the front.
+  const patio = {
+    x: Math.round(width / 2),
+    top: Y(tall ? 0.03 : 0.04),
+    bottom: Y(tall ? 0.3 : 0.38),
+    back: tall ? 30 : Math.round(42 * spread),
+    front: tall ? 34 : Math.round(48 * spread),
+  };
   return {
     tall,
-    lime: at(-130, 0.3, 0.2, 0.2),
-    lemon: at(128, 0.42, 0.85, 0.3),
-    bedA: at(-50, 0.56, 0.36, 0.44),
-    bedB: at(48, 0.66, 0.68, 0.64),
-    dirt: at(92, 0.84, 0.78, 0.86),
-    stones: [at(-8, 0.98, 0.44, 0.98), at(6, 0.84, 0.5, 0.9), at(-5, 0.7, 0.44, 0.82)],
+    // Trees in the back corners (lime right, so it never hides downtown on the
+    // left); the beds flank the path.
+    lime: at(130, 0.3, 0.86, 0.14),
+    lemon: at(-128, 0.42, 0.12, 0.2),
+    bedA: at(-70, 0.56, 0.77, 0.64),
+    bedB: at(66, 0.66, 0.185, 0.46),
+    dirt: at(92, 0.84, 0.84, 0.9),
+    patio,
+    path: { x: patio.x, top: patio.bottom + 1, bottom, width: 10 },
+    bougainvillea: { x: width - Math.round((tall ? 18 : 40) * (tall ? 1 : spread)), y: top + 2 },
     spots: {
-      calico: at(8, 0.97, 0.62, 0.96),
-      tabby: at(-104, 0.9, 0.22, 0.9),
-      // Tabby naps in the lime tree's shade; the calico by the pepper bed.
-      nap: [at(-112, 0.46, 0.24, 0.36), at(20, 0.8, 0.82, 0.84)],
+      calico: at(8, 0.97, 0.6, 0.96),
+      tabby: at(-104, 0.9, 0.3, 0.9),
+      // Tabby naps in the lime tree's shade (on the patio in portrait); the calico on the terrazzo.
+      nap: [at(112, 0.46, 0.36, 0.2), at(12, 0.2, 0.62, 0.84)],
     },
   };
 }
 
-export function createYard(width: number, top: number, bottom: number): Yard {
+export function createYard(width: number, top: number, bottom: number, wallTop = top - 24): Yard {
   const random = rng(4242);
   const height = bottom - top;
   const place = composition(width, top, bottom);
@@ -222,12 +380,15 @@ export function createYard(width: number, top: number, bottom: number): Yard {
   }
 
   const items: Yard["items"] = [];
-  const add = (depth: number, draw: Draw) => items.push({ depth, draw });
+  const add = (depth: number, draw: Draw, id?: string, x = 0) =>
+    items.push({ depth, draw, art: id ? { id, x, bottom: depth + 1 } : undefined });
 
-  // A bare dirt patch (for rolling in) and stepping stones up the middle —
+  // The terrazzo patio, slab path and a bare dirt patch (for rolling in) —
   // flat on the ground, so drawn before everything else.
-  const { dirt, stones } = place;
+  const { dirt, patio, path } = place;
   add(top, (px, paint) => {
+    drawPatio(px, paint, patio);
+    drawPath(px, paint, path);
     const soil = [paint(C.soil), paint(C.dirt), paint(C.dirtLight)];
     for (let dy = -4; dy <= 3; dy++) {
       for (let dx = -15; dx <= 15; dx++) {
@@ -237,13 +398,13 @@ export function createYard(width: number, top: number, bottom: number): Yard {
         px.set(dirt.x + dx, dirt.y + dy, soil[n < 0.2 ? 0 : n > 0.85 ? 2 : 1]!);
       }
     }
-    for (const { x, y } of stones) {
-      px.rect(x - 5, y - 2, 11, 4, paint(C.stone));
-      px.rect(x - 6, y - 1, 13, 2, paint(C.stone));
-      px.rect(x - 4, y + 2, 9, 1, paint(C.stoneDark));
-      px.rect(x - 3, y - 2, 5, 1, paint(C.stoneLight));
-    }
   });
+
+  // Bougainvillea in the back-right corner: climbs the wall and spills over it.
+  {
+    const vine = bougainvillea(rng(777), place.bougainvillea, wallTop, place.tall ? 50 : Math.round(110 * Math.min(1.5, Math.max(0.6, width / 384))));
+    add(place.bougainvillea.y, (px, paint, t, wind) => drawBougainvillea(px, paint, vine, t, wind), "bougainvillea", place.bougainvillea.x);
+  }
 
   // Lime tree, planted near the wall.
   {
@@ -261,7 +422,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
       const cy = trunkTop - 14;
       foliage(px, cx, cy, crown.disks, [paint(C.citrusDark), paint(C.citrus), paint(C.citrusLight)], 11);
       for (const f of crown.fruit) drawFruit(px, paint, FRUIT.lime, cx + f.x, cy + f.y);
-    });
+    }, "lime-tree", x);
   }
 
   // Small lemon tree in a terracotta pot.
@@ -286,7 +447,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
         px.rect(x - 9 + inset, potTop + 4 + r, 18 - inset * 2, 1, paint(C.terracotta));
       }
       px.rect(x - 6, potTop + 5, 1, 6, paint(C.terracottaLight));
-    });
+    }, "lemon-tree", x);
   }
 
   // Raised bed A: San Marzano tomato on a stake, Japanese cucumber on a trellis.
@@ -335,7 +496,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
       }
 
       bed(px, paint, left, base, bedW);
-    });
+    }, "bed-tomato", cx);
   }
 
   // Raised bed B: spicy peppers.
@@ -366,7 +527,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
         }
       });
       bed(px, paint, left, base, bedW);
-    });
+    }, "bed-peppers", cx);
   }
 
   items.sort((a, b) => a.depth - b.depth);
@@ -394,7 +555,14 @@ export function drawYard(px: Pixels, yard: Yard, paint: Paint, t: number, wind: 
     px.set(fx, fy + 1, tones[0]!);
   }
   const layers: Drawable[] = [
-    ...yard.items.map((item) => ({ depth: item.depth, draw: (p: Pixels) => item.draw(p, paint, t, wind) })),
+    ...yard.items.map((item) => {
+      // Hand-drawn art from Aseprite replaces the procedural version.
+      const custom = item.art && art(item.art.id);
+      const draw = custom
+        ? (p: Pixels) => drawArt(p, custom, item.art!.x, item.art!.bottom, paint)
+        : (p: Pixels) => item.draw(p, paint, t, wind);
+      return { depth: item.depth, draw };
+    }),
     ...actors,
   ];
   layers.sort((a, b) => a.depth - b.depth);

@@ -5,6 +5,8 @@ import { type Lab, type RGB, fromLab, hex, mixLab, multiply, packLab, toLab } fr
 import { BAYER, type Pixels, rng } from "./pixels.ts";
 import { type SkyState, gradientAt } from "./sky.ts";
 import type { SunPosition } from "./sun.ts";
+import { art, drawArt } from "./art.ts";
+import { drawDowntown } from "./downtown.ts";
 import type { Geometry, Life } from "./life.ts";
 import { isTall } from "./viewport.ts";
 import { type Yard, createYard, drawYard } from "./yard.ts";
@@ -48,6 +50,8 @@ export interface Layout {
   clouds: Cloud[];
   stars: Star[];
   poles: { spacing: number; offset: number; top: number };
+  /** Centre of the downtown skyline on the horizon. */
+  downtown: number;
   yard: Yard;
 }
 
@@ -103,8 +107,11 @@ export function createLayout(width: number, height: number): Layout {
   const spacing = Math.max(70, Math.round(width * 0.32));
   const poles = { spacing, offset: Math.round(spacing * 0.3), top: Math.round(horizon * 0.45) };
 
-  const yard = createYard(width, yardTop, height);
-  return { width, height, horizon, wallTop, mountains, palms, clouds, stars, poles, yard };
+  // Downtown sits way over on the left of the horizon (it spans about -48…+44px).
+  const downtown = Math.max(50, Math.round(width * 0.13));
+
+  const yard = createYard(width, yardTop, height, wallTop);
+  return { width, height, horizon, wallTop, mountains, palms, clouds, stars, poles, downtown, yard };
 }
 
 // Power lines, seen side-on, so each wire gets its own height to read as distinct.
@@ -151,6 +158,11 @@ const BASE = {
   cap: hex("#b8a48a"),
   capShadow: hex("#6a5a4e"),
   bricks: ["#9a4b3c", "#a8543f", "#8c4436", "#b3603f"].map(hex),
+  gate: hex("#4e3322"),
+  gateSeam: hex("#2e1d12"),
+  beam: hex("#b0804e"),
+  beamLight: hex("#cc9c66"),
+  beamShadow: hex("#6a4630"),
 };
 
 /** A daylight colour as it looks under this sky, in OKLab. */
@@ -323,8 +335,30 @@ function drawWall(px: Pixels, layout: Layout, sky: SkyState, lit: (base: RGB, li
     }
   }
   // The cap's top face catches the open sky, so it picks up a little of its colour.
-  px.rect(0, wallTop, width, 2, packLab(mixLab(litLab(sky, BASE.cap, l), sky.sky[2]!, 0.3)));
+  const cap = packLab(mixLab(litLab(sky, BASE.cap, l), sky.sky[2]!, 0.3));
+  px.rect(0, wallTop, width, 2, cap);
   px.rect(0, wallTop + 2, width, 1, lit(BASE.capShadow, l));
+  drawGate(px, Math.round(width / 2), wallTop, bottom, (c) => lit(c, l));
+}
+
+/**
+ * The gate in the middle of the wall: wide metal double doors set straight
+ * into the wall, dark brown with a darker seam between them, and a light
+ * wooden board along the top edge. Editable in Aseprite (`bun run art edit
+ * gate`); custom art sits with its bottom on the ground.
+ */
+export function drawGate(px: Pixels, cx: number, wallTop: number, bottom: number, lit: (c: RGB) => number) {
+  const custom = art("gate");
+  if (custom) return drawArt(px, custom, cx, bottom - 1, lit);
+
+  const half = 18;
+  const top = wallTop - 3; // stands a little taller than the wall
+  px.rect(cx - half, top, half * 2, bottom - top, lit(BASE.gate));
+  px.rect(cx - 1, top + 3, 1, bottom - top - 3, lit(BASE.gateSeam));
+  // The wood board along the top edge.
+  px.rect(cx - half, top, half * 2, 3, lit(BASE.beam));
+  px.rect(cx - half, top, half * 2, 1, lit(BASE.beamLight));
+  px.rect(cx - half, top + 3, half * 2, 1, lit(BASE.beamShadow));
 }
 
 export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPosition, t: number, life?: Life) {
@@ -350,6 +384,8 @@ export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPos
 
   const mountain = packLab(mixLab(sky.haze, sky.sky[4]!, 0.3));
   for (let x = 0; x < width; x++) px.rect(x, horizon - Math.round(layout.mountains[x]!), 1, Math.round(layout.mountains[x]!) + 1, mountain);
+
+  drawDowntown(px, layout.downtown, horizon, sky, t, (base) => litLab(sky, base, sky.light));
 
   for (const palm of layout.palms) {
     const haze = palm.near ? 0 : 0.35;

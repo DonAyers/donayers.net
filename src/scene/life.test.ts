@@ -36,14 +36,18 @@ function simulate(altitude: number, seconds: number, seed: number, possumSoon = 
 }
 
 test("by day the cats get up to all sorts, and the birds come down to the yard", () => {
-  const run = simulate(20, 600, 7);
-  expect(run.outOfBounds).toBe(0);
-  const all = new Set([...run.seen.calico, ...run.seen.tabby]);
-  for (const kind of ["sit", "walk", "groom", "stare", "wiggle", "leap", "fight", "roll"]) expect(all).toContain(kind);
-  expect(run.maxBirds).toBeGreaterThan(0);
-  expect(run.maxBirds).toBeLessThanOrEqual(5);
-  expect(run.groundBirds).toBeGreaterThan(0);
-  expect(run.maxMoths).toBe(0);
+  // Any single day is random; across a few days every behaviour should show up.
+  const all = new Set<string>();
+  for (const seed of [7, 13, 29]) {
+    const run = simulate(20, 600, seed);
+    expect(run.outOfBounds).toBe(0);
+    for (const kind of [...run.seen.calico, ...run.seen.tabby]) all.add(kind);
+    expect(run.maxBirds).toBeGreaterThan(0);
+    expect(run.maxBirds).toBeLessThanOrEqual(5);
+    expect(run.groundBirds).toBeGreaterThan(0);
+    expect(run.maxMoths).toBe(0);
+  }
+  for (const kind of ["sit", "walk", "groom", "stare", "wiggle", "leap", "fight", "roll", "sleep"]) expect(all).toContain(kind);
 });
 
 test("at night the birds roost, moths come out, and the cats sleep a lot", () => {

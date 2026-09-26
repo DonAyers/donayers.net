@@ -3,6 +3,7 @@
 // moths, the other cat, a possum on the wall, time of day), and activities
 // chain the way real cat behaviour does: stare → stalk → wiggle → pounce →
 // miss → groom like nothing happened.
+import { art, drawArt } from "./art.ts";
 import { type RGB, hex } from "./color.ts";
 import type { Bird } from "./birds.ts";
 import type { Moth } from "./critters.ts";
@@ -140,7 +141,7 @@ type ShapeName = keyof typeof SHAPES;
 const LEGS = [[3, 6, 13, 16], [2, 7, 12, 17], [3, 6, 13, 16], [4, 5, 14, 15]];
 
 // The calico's original front-facing sit, kept exactly as drawn.
-const CALICO_FRONT = [
+export const CALICO_FRONT = [
   "..O.........K..",
   "..OO.......KK..",
   "..OPO.....KPK..",
@@ -207,7 +208,7 @@ const SKINS: Record<string, Skin> = {
 };
 
 // The tabby's original loaf (facing left), kept exactly as drawn.
-const TABBY_LOAF = [
+export const TABBY_LOAF = [
   "..D..D..............",
   "..DG.DG.............",
   ".GGDGGG.............",
@@ -220,9 +221,9 @@ const TABBY_LOAF = [
   "..LLGGGGGDGGGDGGGDGG",
   "...TTDTTTDTTTDTTTTT.",
 ];
-const TABBY_COLORS = { G: hex("#8e8e94"), D: hex("#5c5c64"), L: hex("#c8c8ce"), P: hex("#d99a9a"), E: hex("#d0e050"), T: hex("#7a7a82") };
+export const TABBY_COLORS = { G: hex("#8e8e94"), D: hex("#5c5c64"), L: hex("#c8c8ce"), P: hex("#d99a9a"), E: hex("#d0e050"), T: hex("#7a7a82") };
 
-const CALICO_COLORS = { W: hex("#f4f0e8"), s: hex("#cfc9bd"), O: hex("#e0883a"), K: hex("#2e2a28"), P: hex("#e89a9a"), E: hex("#3e4a26") };
+export const CALICO_COLORS = { W: hex("#f4f0e8"), s: hex("#cfc9bd"), O: hex("#e0883a"), K: hex("#2e2a28"), P: hex("#e89a9a"), E: hex("#3e4a26") };
 const SHADOW = hex("#34522a");
 const DUST = hex("#b89a72");
 const Z_COLOR = hex("#f0ece0");
@@ -717,6 +718,8 @@ export class Cat {
     px.line(x + 16, base - 3, x + 17 + Math.round(swish), base - 8, tail);
     px.line(x + 17 + Math.round(swish), base - 8, x + 16 + Math.round(swish * 2.5), base - 12, tail);
     px.line(x + 12, base - 1, x + 16, base - 2, tail);
+    const custom = art("calico");
+    if (custom) return drawArt(px, custom, Math.round(this.x), base - 1, paint); // tail stays animated
     const top = base - CALICO_FRONT.length;
     CALICO_FRONT.forEach((row, r) => {
       for (let c = 0; c < row.length; c++) {
@@ -728,6 +731,8 @@ export class Cat {
   }
 
   private drawTabbyLoaf(px: Pixels, paint: Paint, t: number, closed: boolean) {
+    const custom = art("tabby");
+    if (custom) return drawArt(px, custom, Math.round(this.x), Math.round(this.y) - 1, paint, this.facing > 0);
     const colors = Object.fromEntries(Object.entries(TABBY_COLORS).map(([k, v]) => [k, paint(v)])) as Record<string, number>;
     const width = TABBY_LOAF[0]!.length;
     const x = Math.round(this.x) - width / 2;
