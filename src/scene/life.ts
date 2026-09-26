@@ -53,8 +53,9 @@ export interface LifeOptions {
   random?: () => number;
   /** Send a possum over the wall within a few seconds (for previews). */
   possumSoon?: boolean;
-  /** Same for a plane overhead, and the LAPD helicopter. */
+  /** Same for a plane overhead, the LAPD helicopter, and a crow. */
   planeSoon?: boolean;
+  crowSoon?: boolean;
   helicopterSoon?: boolean;
 }
 
@@ -89,6 +90,7 @@ export class Life implements World {
   private particles: Particle[] = [];
   private possumCooldown: number;
   private possumSoon: boolean;
+  private crowSoon: boolean;
   private planeCooldown: number;
   private helicopterCooldown: number;
 
@@ -104,6 +106,7 @@ export class Life implements World {
     this.flowers = geo.flowers;
     this.light = light;
     this.possumSoon = !!options.possumSoon;
+    this.crowSoon = !!options.crowSoon;
     this.possumCooldown = this.possumSoon ? 3 : 45;
     // Early enough that most visits see a plane; the helicopter takes longer to turn up.
     this.planeCooldown = options.planeSoon ? 1 : 8 + this.random() * 12;
@@ -184,7 +187,13 @@ export class Life implements World {
     const r = this.random;
 
     const birdTarget = light > 0.3 ? 4 : 0;
-    if (this.birds.length < birdTarget && r() < dt / 5) this.birds.push(Bird.arrive(this));
+    const sparrows = this.birds.filter((b) => b.species === "sparrow").length;
+    if (sparrows < birdTarget && r() < dt / 5) this.birds.push(Bird.arrive(this));
+    // Now and then, one big crow.
+    if (light > 0.3 && !this.birds.some((b) => b.species === "crow") && r() < dt / (this.crowSoon ? 0.5 : 90)) {
+      this.birds.push(Bird.arrive(this, "crow"));
+      this.crowSoon = false;
+    }
     const mothTarget = light < 0.35 ? 3 : 0;
     if (this.moths.length < mothTarget && r() < dt / 3) this.spawnMoth();
     // A butterfly or two drifting through by day.

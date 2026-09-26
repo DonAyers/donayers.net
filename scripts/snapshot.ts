@@ -200,6 +200,37 @@ for (const [name, altitude, options] of [
   console.log(file);
 }
 
+// The crow up close: flying in, perched, cawing, and on the ground.
+{
+  const sky = skyAt(20);
+  const life = new Life(geometry(layout), sky.light, { random: rng(31), crowSoon: true });
+  const want = ["fly", "perch", "caw", "ground"];
+  const shots = new Map<string, Pixels>();
+  const crop = { w: 56, h: 28 };
+  for (let t = 0; t < 900 && shots.size < want.length; t += 1 / 30) {
+    life.update(1 / 30, sky.light);
+    const crow = life.birds.find((b) => b.species === "crow");
+    if (!crow || crow.x < 0 || crow.x > WIDTH) continue;
+    const moment = crow.cawing ? "caw" : crow.state;
+    if (!want.includes(moment) || shots.has(moment)) continue;
+    const px = new Pixels(WIDTH, HEIGHT);
+    drawScene(px, layout, sky, { altitude: 20, azimuth: 268 }, t, life);
+    const x0 = Math.max(0, Math.min(WIDTH - crop.w, Math.round(crow.x) - crop.w / 2));
+    const y0 = Math.max(0, Math.min(HEIGHT - crop.h, Math.round(crow.y) - 18));
+    const frame = new Pixels(crop.w, crop.h);
+    for (let y = 0; y < crop.h; y++) frame.data.set(px.data.subarray((y0 + y) * WIDTH + x0, (y0 + y) * WIDTH + x0 + crop.w), y * crop.w);
+    shots.set(moment, frame);
+  }
+  const frames = want.map((m) => shots.get(m)).filter((f): f is Pixels => !!f);
+  const sheet = new Pixels(crop.w * frames.length, crop.h);
+  frames.forEach((f, i) => {
+    for (let y = 0; y < crop.h; y++) sheet.data.set(f.data.subarray(y * crop.w, (y + 1) * crop.w), y * sheet.width + i * crop.w);
+  });
+  const file = join(outDir, "18-crow.png");
+  await Bun.write(file, png(sheet, 7));
+  console.log(`${file} (${[...shots.keys()].join(", ")})`);
+}
+
 // Close-up of the yard at golden hour, for sprite work.
 {
   const px = new Pixels(WIDTH, HEIGHT);

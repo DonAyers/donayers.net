@@ -18,7 +18,7 @@ export function startScene({ still }: { still: boolean }) {
   const clock = SceneClock.fromLocation(location.search);
 
   const params = new URLSearchParams(location.search);
-  const visitors = { possumSoon: params.has("possum"), planeSoon: params.has("plane"), helicopterSoon: params.has("helicopter") };
+  const visitors = { possumSoon: params.has("possum"), planeSoon: params.has("plane"), helicopterSoon: params.has("helicopter"), crowSoon: params.has("crow") };
   let px: Pixels | null = null;
   let layout: Layout;
   let life: Life | null = null;

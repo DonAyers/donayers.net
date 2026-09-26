@@ -141,6 +141,31 @@ test("the calico goes wild for butterflies (the tabby can't be bothered)", () =>
   expect(tabbyChased).toBe(false);
 });
 
+test("the occasional big crow sits on the wall and wires, and caws", () => {
+  const layout = createLayout(384, 216);
+  const light = skyAt(20).light;
+  const life = new Life(geometry(layout), light, { random: rng(31) });
+  const where = new Set<string>();
+  let crowFrames = 0;
+  let maxCrows = 0;
+  let cawed = false;
+  for (let i = 0; i < 1200 / DT; i++) {
+    life.update(DT, light);
+    const crows = life.birds.filter((b) => b.species === "crow");
+    maxCrows = Math.max(maxCrows, crows.length);
+    for (const crow of crows) {
+      crowFrames++;
+      if (crow.state === "perch" || crow.state === "ground") where.add(crow.state === "perch" ? crow.perch.kind : "ground");
+      cawed ||= crow.cawing;
+    }
+  }
+  expect(crowFrames).toBeGreaterThan(0);
+  expect(maxCrows).toBe(1);
+  expect(where).toContain("wall");
+  expect(where).toContain("wire");
+  expect(cawed).toBe(true);
+});
+
 test("butterflies stay out of the night", () => {
   const layout = createLayout(384, 216);
   const life = new Life(geometry(layout), skyAt(-25).light, { random: rng(2) });
