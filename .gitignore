@@ -135,8 +135,8 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-# Astro
-.astro
+# Scene previews (bun run snapshot)
+snapshots/
 
 # Package Manager Lock Files
 pnpm-lock.yaml
