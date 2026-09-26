@@ -167,6 +167,39 @@ for (const [name, altitude, options] of [
   console.log(file);
 }
 
+// The calico's butterfly chase: frames every 0.4s once it starts, zoomed in around her.
+{
+  const sky = skyAt(20);
+  const life = new Life(geometry(layout), sky.light, { random: rng(23) });
+  const frames: Pixels[] = [];
+  const crop = { w: 150, h: 70 };
+  let t = 0;
+  let next = 0;
+  while (frames.length < 10 && t < 600) {
+    life.update(1 / 30, sky.light);
+    t += 1 / 30;
+    const calico = life.cats[0]!;
+    if (!calico.chasing || t < next) continue;
+    next = t + 0.4;
+    const px = new Pixels(WIDTH, HEIGHT);
+    drawScene(px, layout, sky, { altitude: 20, azimuth: 268 }, t, life);
+    const x0 = Math.max(0, Math.min(WIDTH - crop.w, Math.round(calico.x) - crop.w / 2));
+    const y0 = Math.max(0, Math.min(HEIGHT - crop.h, Math.round(calico.y) - 50));
+    const frame = new Pixels(crop.w, crop.h);
+    for (let y = 0; y < crop.h; y++) frame.data.set(px.data.subarray((y0 + y) * WIDTH + x0, (y0 + y) * WIDTH + x0 + crop.w), y * crop.w);
+    frames.push(frame);
+  }
+  const sheet = new Pixels(crop.w * 2, crop.h * Math.ceil(frames.length / 2));
+  frames.forEach((f, i) => {
+    for (let y = 0; y < crop.h; y++) {
+      sheet.data.set(f.data.subarray(y * crop.w, (y + 1) * crop.w), (Math.floor(i / 2) * crop.h + y) * sheet.width + (i % 2) * crop.w);
+    }
+  });
+  const file = join(outDir, "17-butterfly-chase.png");
+  await Bun.write(file, png(sheet, 4));
+  console.log(file);
+}
+
 // Close-up of the yard at golden hour, for sprite work.
 {
   const px = new Pixels(WIDTH, HEIGHT);

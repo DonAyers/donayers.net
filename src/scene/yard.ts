@@ -5,6 +5,7 @@
 // Positions are designed for a 384px-wide scene and spread to fit others.
 import { art, drawArt } from "./art.ts";
 import { type RGB, hex } from "./color.ts";
+import type { Flower } from "./critters.ts";
 import { BAYER, type Pixels, hash2, rng, sprite } from "./pixels.ts";
 import { isTall } from "./viewport.ts";
 
@@ -302,6 +303,8 @@ export interface Yard {
   items: { depth: number; draw: Draw; art?: ArtSlot }[];
   /** Places the cats care about. */
   spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
+  /** Where butterflies land: x, ground depth under the bloom, and its height. */
+  flowers: Flower[];
 }
 
 export const BED_A_WIDTH = 66;
@@ -531,7 +534,20 @@ export function createYard(width: number, top: number, bottom: number, wallTop =
   }
 
   items.sort((a, b) => a.depth - b.depth);
-  return { top, bottom, width, grass, items, spots: { ...place.spots, dirt } };
+
+  // Blooms for butterflies: bougainvillea over the wall, peppers, tomato and
+  // cucumber flowers, and the lemon tree.
+  const bougainvilleaSpan = place.tall ? 50 : 110;
+  const aLeft = place.bedA.x - BED_A_WIDTH / 2;
+  const bLeft = place.bedB.x - BED_B_WIDTH / 2;
+  const flowers: Flower[] = [
+    ...[0.2, 0.45, 0.7].map((f) => ({ x: Math.round(place.bougainvillea.x - bougainvilleaSpan * (0.8 - f)), gy: top + 1, h: top - wallTop + 5 })),
+    ...[10, 27, 44].map((dx) => ({ x: bLeft + dx, gy: place.bedB.y, h: 27 })),
+    { x: aLeft + 17, gy: place.bedA.y, h: 36 },
+    { x: aLeft + 47, gy: place.bedA.y, h: 40 },
+    { x: place.lemon.x, gy: place.lemon.y, h: 36 },
+  ];
+  return { top, bottom, width, grass, items, spots: { ...place.spots, dirt }, flowers };
 }
 
 type Drawable = { depth: number; draw: (px: Pixels) => void };

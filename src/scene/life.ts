@@ -5,7 +5,7 @@ import { Helicopter, Plane } from "./aircraft.ts";
 import { Bird } from "./birds.ts";
 import { Cat, PERSONALITIES } from "./cats.ts";
 import { hex } from "./color.ts";
-import { Moth, Possum } from "./critters.ts";
+import { Butterfly, type Flower, Moth, Possum } from "./critters.ts";
 import type { Pixels } from "./pixels.ts";
 import type { Paint } from "./yard.ts";
 
@@ -29,6 +29,7 @@ export interface World {
   readonly cats: Cat[];
   readonly birds: Bird[];
   readonly moths: Moth[];
+  readonly butterflies: Butterfly[];
   readonly possum: Possum | null;
   readonly helicopter: Helicopter | null;
   wireAt(wire: number, x: number): number;
@@ -44,6 +45,8 @@ export interface Geometry {
   yardBottom: number;
   wireAt: (wire: number, x: number) => number;
   spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
+  /** Where butterflies land. */
+  flowers: Flower[];
 }
 
 export interface LifeOptions {
@@ -78,6 +81,8 @@ export class Life implements World {
   cats: Cat[];
   birds: Bird[] = [];
   moths: Moth[] = [];
+  butterflies: Butterfly[] = [];
+  flowers: Flower[];
   possum: Possum | null = null;
   plane: Plane | null = null;
   helicopter: Helicopter | null = null;
@@ -96,6 +101,7 @@ export class Life implements World {
     this.random = options.random ?? Math.random;
     this.bounds = { left: 10, right: geo.width - 10, top: geo.yardTop + 9, bottom: geo.yardBottom - 1 };
     this.spots = { nap: geo.spots.nap, dirt: geo.spots.dirt };
+    this.flowers = geo.flowers;
     this.light = light;
     this.possumSoon = !!options.possumSoon;
     this.possumCooldown = this.possumSoon ? 3 : 45;
@@ -109,6 +115,7 @@ export class Life implements World {
     // Start the scene already populated for the time of day.
     if (light > 0.3) for (let i = 0; i < 3; i++) this.birds.push(Bird.perchedOnWire(this));
     if (light < 0.35) for (let i = 0; i < 2; i++) this.spawnMoth();
+    if (light > 0.45) this.butterflies.push(new Butterfly(this, this.flowers));
   }
 
   /**
@@ -144,6 +151,11 @@ export class Life implements World {
       moth.x *= sx;
       moth.y = mapY(moth.y);
     }
+    this.flowers = geo.flowers;
+    for (const butterfly of this.butterflies) {
+      butterfly.x *= sx;
+      butterfly.gy = mapY(butterfly.gy);
+    }
     if (this.possum) this.possum.x *= sx;
     const sy = geo.horizon / Math.max(1, oldHorizon);
     if (this.plane) {
@@ -175,6 +187,8 @@ export class Life implements World {
     if (this.birds.length < birdTarget && r() < dt / 5) this.birds.push(Bird.arrive(this));
     const mothTarget = light < 0.35 ? 3 : 0;
     if (this.moths.length < mothTarget && r() < dt / 3) this.spawnMoth();
+    // A butterfly or two drifting through by day.
+    if (light > 0.45 && this.butterflies.length < 1 && r() < dt / 40) this.butterflies.push(new Butterfly(this, this.flowers));
 
     // Possums: night only, rare (about one every four minutes, never back to back).
     this.possumCooldown -= dt;
@@ -192,6 +206,7 @@ export class Life implements World {
     for (const cat of this.cats) cat.update(dt);
     for (const bird of this.birds) bird.update(dt, this);
     for (const moth of this.moths) moth.update(dt, this);
+    for (const butterfly of this.butterflies) butterfly.update(dt, this, this.flowers);
     this.possum?.update(dt, this);
     this.plane?.update(dt, this);
     this.helicopter?.update(dt, this);
@@ -206,6 +221,7 @@ export class Life implements World {
 
     this.birds = this.birds.filter((b) => !b.gone);
     this.moths = this.moths.filter((m) => !m.gone);
+    this.butterflies = this.butterflies.filter((b) => !b.gone);
     if (this.possum?.gone) {
       this.possum = null;
       this.possumCooldown = 300;
@@ -260,6 +276,8 @@ export class Life implements World {
     for (const bird of this.birds) {
       if (bird.layer === "yard") out.push({ depth: bird.y, draw: (px) => bird.draw(px, paint, t) });
     }
+    // Butterflies sort by the ground under them, so they flit behind and in front of things.
+    for (const butterfly of this.butterflies) out.push({ depth: butterfly.gy, draw: (px) => butterfly.draw(px, paint, t) });
     return out;
   }
 

@@ -112,6 +112,42 @@ test("rotating the phone keeps everyone, in the yard, mid-story", () => {
   drawScene(new Pixels(168, 362), tall, skyAt(20), { altitude: 20, azimuth: 268 }, 1, life);
 });
 
+test("the calico goes wild for butterflies (the tabby can't be bothered)", () => {
+  const layout = createLayout(384, 216);
+  const light = skyAt(20).light;
+  const life = new Life(geometry(layout), light, { random: rng(23) });
+  let longest = 0;
+  let current = 0;
+  let airborne = 0;
+  let tumbling = 0;
+  let tabbyChased = false;
+  let butterflyFrames = 0;
+  for (let i = 0; i < 600 / DT; i++) {
+    life.update(DT, light);
+    const [calico, tabby] = life.cats;
+    if (life.butterflies.length) butterflyFrames++;
+    if (calico!.chasing) {
+      current += DT;
+      longest = Math.max(longest, current);
+      if (calico!.z > 2) airborne++;
+      if (calico!.stationary) tumbling++;
+    } else current = 0;
+    tabbyChased ||= !!tabby!.chasing;
+  }
+  expect(butterflyFrames).toBeGreaterThan(0);
+  expect(longest).toBeGreaterThan(15); // a long, proper chase
+  expect(airborne).toBeGreaterThan(60); // lots of leaping
+  expect(tumbling).toBeGreaterThan(0);
+  expect(tabbyChased).toBe(false);
+});
+
+test("butterflies stay out of the night", () => {
+  const layout = createLayout(384, 216);
+  const life = new Life(geometry(layout), skyAt(-25).light, { random: rng(2) });
+  for (let i = 0; i < 120 / DT; i++) life.update(DT, skyAt(-25).light);
+  expect(life.butterflies).toHaveLength(0);
+});
+
 test("planes come over every minute or so; the helicopter every few", () => {
   const layout = createLayout(384, 216);
   const light = skyAt(20).light;

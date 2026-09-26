@@ -6,7 +6,7 @@
 import { art, drawArt } from "./art.ts";
 import { type RGB, hex } from "./color.ts";
 import type { Bird } from "./birds.ts";
-import type { Moth } from "./critters.ts";
+import type { Butterfly, Moth } from "./critters.ts";
 import type { World } from "./life.ts";
 import { type Pixels, hash2 } from "./pixels.ts";
 import type { Paint } from "./yard.ts";
@@ -187,6 +187,8 @@ export interface Personality {
   groom: number;
   /** Idle pose it favours. */
   idle: "front" | "loaf";
+  /** Loses its mind over butterflies. */
+  chaser: boolean;
 }
 
 const SKINS: Record<string, Skin> = {
@@ -229,8 +231,8 @@ const DUST = hex("#b89a72");
 const Z_COLOR = hex("#f0ece0");
 
 export const PERSONALITIES: Record<"calico" | "tabby", Personality> = {
-  calico: { name: "calico", speed: 15, energy: 0.8, hunt: 0.9, sleepy: 0.35, groom: 0.7, idle: "front" },
-  tabby: { name: "tabby", speed: 11, energy: 0.45, hunt: 0.55, sleepy: 0.85, groom: 0.9, idle: "loaf" },
+  calico: { name: "calico", speed: 15, energy: 0.8, hunt: 0.9, sleepy: 0.35, groom: 0.7, idle: "front", chaser: true },
+  tabby: { name: "tabby", speed: 11, energy: 0.45, hunt: 0.55, sleepy: 0.85, groom: 0.9, idle: "loaf", chaser: false },
 };
 
 // ---- Activities -----------------------------------------------------------------
@@ -246,6 +248,7 @@ type Activity =
   | { kind: "wiggle"; bird: Bird; until: number }
   | { kind: "leap"; x0: number; y0: number; x1: number; y1: number; height: number; dur: number; then: () => void }
   | { kind: "bat"; moth: Moth; until: number }
+  | { kind: "chase"; butterfly: Butterfly; until: number }
   | { kind: "fight"; other: Cat; until: number; leader: boolean };
 
 export class Cat {
@@ -263,6 +266,10 @@ export class Cat {
   private noticedHelicopter = false;
   /** Covering ground during an activity that otherwise sits (batting at moths). */
   private moving = false;
+  /** Seconds since the last butterfly chase ended (negative while recovering). */
+  private restedFor = 1;
+  /** State for a butterfly chase: the current leap, zoomies and tumbles. */
+  private chase = { jumpT: -1, jumpH: 0, jumpVx: 0, jumpVy: 0, leapReady: 0, zoomUntil: 0, zoomDir: 0, nextZoom: 0, tumbleUntil: 0 };
   /** Runs when a timed activity ends; defaults to picking something new. */
   private activityThen: (() => void) | null = null;
 
@@ -284,7 +291,12 @@ export class Cat {
 
   get busy() {
     const k = this.activity.kind;
-    return k === "fight" || k === "leap" || k === "wiggle";
+    return k === "fight" || k === "leap" || k === "wiggle" || k === "chase";
+  }
+
+  /** The butterfly this cat is madly chasing, if any. */
+  get chasing(): Butterfly | null {
+    return this.activity.kind === "chase" ? this.activity.butterfly : null;
   }
 
   /** The pose drawn right now stays put (sitting, lying, grooming…): the cat must not slide. */
@@ -292,13 +304,14 @@ export class Cat {
     const k = this.activity.kind;
     if (k === "walk" || k === "leap") return false;
     if (k === "bat") return !this.moving && this.z <= 1;
+    if (k === "chase") return !this.moving && this.z <= 1; // standing, or tumbling on her back
     return true;
   }
 
   /** How alarming this cat looks to a bird: 0 calm … 1 about to pounce. */
   get threat(): number {
     const a = this.activity;
-    if (a.kind === "leap" || a.kind === "wiggle") return 1;
+    if (a.kind === "leap" || a.kind === "wiggle" || a.kind === "chase") return 1;
     if (a.kind === "walk") return a.gait === "stalk" ? 0.6 : a.gait === "trot" ? 0.8 : 0.5;
     if (a.kind === "sleep" || a.kind === "loaf") return 0;
     return 0.25;
@@ -339,8 +352,10 @@ export class Cat {
     const groundBird = w.birds.find((b) => b.onGround);
     const wireBird = w.birds.find((b) => b.perched);
     const moth = w.moths[0];
+    const butterfly = this.readyToChase ? w.butterflies.find((b) => !b.gone) : undefined;
 
     const options: [number, () => void][] = [
+      [butterfly ? 3 : 0, () => this.chaseButterfly(butterfly!)],
       [1, () => this.sit()],
       [1.3 * p.energy, () => this.wander()],
       [0.9 * p.groom, () => this.groom()],
@@ -418,6 +433,27 @@ export class Cat {
     this.activityThen = () => this.groom();
   }
 
+  /** Completely lose it over a butterfly: sprint, leap, zoom, tumble, repeat. */
+  private chaseButterfly(butterfly: Butterfly) {
+    this.chase = { jumpT: -1, jumpH: 0, jumpVx: 0, jumpVy: 0, leapReady: 0.5, zoomUntil: 0, zoomDir: 0, nextZoom: this.rand(2, 4), tumbleUntil: 0 };
+    this.set({ kind: "chase", butterfly, until: this.rand(25, 45) });
+  }
+
+  /** Butterfly-crazy, and not still worn out from the last one. */
+  private get readyToChase() {
+    return this.persona.chaser && this.restedFor > 0;
+  }
+
+  private endChase(butterfly: Butterfly) {
+    this.z = 0;
+    this.moving = false;
+    this.restedFor = -this.rand(60, 120); // exhausted for a minute or two
+    butterfly.escape();
+    // Watch it sail off over the wall, chattering, then pretend it never mattered.
+    this.set({ kind: "stare", at: () => (butterfly.gone ? null : { x: butterfly.x, y: butterfly.y }), until: this.rand(2.5, 4), chatter: true });
+    this.activityThen = () => this.groom();
+  }
+
   private chaseMoth(moth: Moth) {
     this.walkTo(moth.x, clamp(this.y, this.world.bounds.top, this.world.bounds.bottom), "trot", () =>
       this.set({ kind: "bat", moth, until: this.rand(4, 9) }),
@@ -469,6 +505,9 @@ export class Cat {
 
     const calm = a.kind === "sit" || a.kind === "loaf" || a.kind === "groom" || (a.kind === "walk" && a.gait === "walk" && !a.then);
     if (!calm) return;
+    // The calico cannot let a butterfly go by (once she's got her breath back).
+    const butterfly = this.readyToChase ? w.butterflies.find((b) => !b.gone && Math.abs(b.x - this.x) < 140) : undefined;
+    if (butterfly && w.random() < 0.5) return this.chaseButterfly(butterfly);
     const bird = w.birds.find((b) => b.onGround && Math.abs(b.x - this.x) < 90);
     if (bird && w.random() < this.persona.hunt * 0.7) return this.stalk(bird);
     const moth = w.moths.find((m) => Math.abs(m.x - this.x) < 50);
@@ -486,6 +525,7 @@ export class Cat {
 
   update(dt: number) {
     this.clock += dt;
+    this.restedFor += dt;
     this.sensed += dt;
     if (this.sensed > 1) {
       this.sensed = 0;
@@ -567,6 +607,9 @@ export class Cat {
         if (this.z > 5 && Math.abs(dx) < 4 && reach < 8 && this.world.random() < dt * 0.8) m.catch();
         break;
       }
+      case "chase":
+        this.updateChase(a, dt);
+        break;
       case "fight":
         if (a.leader && this.world.random() < dt * 6) this.world.dust(this.x + this.rand(-8, 8), this.y, 1);
         if (this.clock > a.until) {
@@ -585,6 +628,71 @@ export class Cat {
     const b = this.world.bounds;
     this.x = clamp(this.x, b.left, b.right);
     this.y = clamp(this.y, b.top, b.bottom);
+  }
+
+  private updateChase(a: Extract<Activity, { kind: "chase" }>, dt: number) {
+    const b = a.butterfly;
+    const c = this.chase;
+    const bounds = this.world.bounds;
+    if (b.gone || this.clock > a.until) return this.endChase(b);
+
+    // Flat on her back after a botched landing, legs going.
+    if (this.clock < c.tumbleUntil) {
+      this.moving = false;
+      return;
+    }
+
+    // Mid-leap: arc up at it, paws out.
+    if (c.jumpT >= 0) {
+      c.jumpT += dt;
+      const u = Math.min(1, c.jumpT / 0.5);
+      this.z = c.jumpH * 4 * u * (1 - u);
+      this.x += c.jumpVx * dt;
+      this.y += c.jumpVy * dt;
+      this.moving = true;
+      if (u >= 1) {
+        this.z = 0;
+        c.jumpT = -1;
+        this.world.dust(this.x, this.y, 4);
+        if (this.world.random() < 0.25) c.tumbleUntil = this.clock + 0.6 + this.world.random() * 0.5; // wipeout
+      }
+      return;
+    }
+
+    // Zoomies: every few seconds, a sudden dash off in some random direction.
+    if (this.clock > c.nextZoom) {
+      c.zoomUntil = this.clock + this.rand(0.4, 0.9);
+      c.zoomDir = this.rand(0, Math.PI * 2);
+      c.nextZoom = this.clock + this.rand(1.8, 4);
+    }
+    const zooming = this.clock < c.zoomUntil;
+    const tx = zooming ? this.x + Math.cos(c.zoomDir) * 40 : b.x;
+    const ty = zooming ? this.y + Math.sin(c.zoomDir) * 20 : clamp(b.gy, bounds.top, bounds.bottom);
+    const speed = this.persona.speed * (zooming ? 4 : 3);
+    const dx = tx - this.x;
+    const dy = ty - this.y;
+    const dist = Math.hypot(dx, dy);
+    this.moving = dist > 1;
+    if (this.moving) {
+      // Zigzag a little as she runs.
+      const wobble = Math.sin(this.clock * 9) * 0.35;
+      const move = Math.min(dist, speed * dt);
+      this.x += ((dx - dy * wobble) / dist) * move;
+      this.y += ((dy + dx * wobble * 0.3) / dist) * move;
+      this.step += move;
+      if (Math.abs(dx) > 1) this.facing = dx > 0 ? 1 : -1;
+    }
+
+    // Close enough and low enough: leap for it.
+    const near = Math.abs(b.x - this.x) < 24 && Math.abs(b.gy - this.y) < 14 && b.h < 28;
+    if (!zooming && near && this.clock > c.leapReady && this.world.random() < dt * 7) {
+      c.jumpT = 0;
+      c.jumpH = clamp(b.h + 3, 6, 18);
+      c.jumpVx = clamp((b.x - this.x) / 0.5, -40, 40);
+      c.jumpVy = clamp((b.gy - this.y) / 0.5, -20, 20);
+      c.leapReady = this.clock + this.rand(0.35, 0.8);
+      this.facing = b.x >= this.x ? 1 : -1;
+    }
   }
 
   // ---- Drawing ----
@@ -638,6 +746,14 @@ export class Cat {
         return { shape: SHAPES.lookUp, closed: false };
       case "fight":
         return { shape: SHAPES.curl, closed: true };
+      case "chase": {
+        if (this.clock < this.chase.tumbleUntil) {
+          return { shape: Math.floor(t * 8) % 2 ? SHAPES.bellyA : SHAPES.bellyB, closed: false };
+        }
+        if (this.z > 1) return { shape: SHAPES.pounce, closed: false };
+        if (this.moving) return { shape: SHAPES.walk, closed: false, legs: LEGS[Math.floor(this.step / 3) % 4] };
+        return { shape: SHAPES.lookUp, closed: false };
+      }
     }
   }
 

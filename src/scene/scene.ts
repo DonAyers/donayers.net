@@ -138,6 +138,7 @@ export function geometry(layout: Layout): Geometry {
     yardBottom: layout.yard.bottom,
     wireAt: (index, x) => Math.round(wireAt(layout, index, x)),
     spots: layout.yard.spots,
+    flowers: layout.yard.flowers,
   };
 }
 
