@@ -145,6 +145,28 @@ for (const { name, big } of [sheet("8-life-day", 20, 5), sheet("9-life-night", -
   console.log(file);
 }
 
+// Aircraft: a plane crossing at golden hour, and the LAPD helicopter's searchlight at night.
+for (const [name, altitude, options] of [
+  ["14-plane", 4, { planeSoon: true }],
+  ["15-helicopter-night", -25, { helicopterSoon: true }],
+  ["16-helicopter-day", 20, { helicopterSoon: true }],
+] as const) {
+  const sky = skyAt(altitude);
+  const life = new Life(geometry(layout), sky.light, { random: rng(3), ...options });
+  let t = 0;
+  for (; t < 120; t += 1 / 30) {
+    life.update(1 / 30, sky.light);
+    const plane = life.plane;
+    if (plane && Math.abs(plane.x - WIDTH * 0.6) < 2) break;
+    if (life.helicopter?.hovering && t > 20) break;
+  }
+  const px = new Pixels(WIDTH, HEIGHT);
+  drawScene(px, layout, sky, { altitude, azimuth: 268 }, t, life);
+  const file = join(outDir, `${name}.png`);
+  await Bun.write(file, png(px, ZOOM));
+  console.log(file);
+}
+
 // Close-up of the yard at golden hour, for sprite work.
 {
   const px = new Pixels(WIDTH, HEIGHT);

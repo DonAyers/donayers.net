@@ -17,7 +17,8 @@ export function startScene({ still }: { still: boolean }) {
   const ctx = canvas.getContext("2d")!;
   const clock = SceneClock.fromLocation(location.search);
 
-  const possumSoon = new URLSearchParams(location.search).has("possum");
+  const params = new URLSearchParams(location.search);
+  const visitors = { possumSoon: params.has("possum"), planeSoon: params.has("plane"), helicopterSoon: params.has("helicopter") };
   let px: Pixels | null = null;
   let layout: Layout;
   let life: Life | null = null;
@@ -52,7 +53,7 @@ export function startScene({ still }: { still: boolean }) {
     layout = createLayout(width, height);
     // Keep the cats and birds where they were (in proportion) instead of respawning them.
     if (life) life.resize(geometry(layout));
-    else life = new Life(geometry(layout), skyAt(sunPosition(clock.now()).altitude).light, { possumSoon });
+    else life = new Life(geometry(layout), skyAt(sunPosition(clock.now()).altitude).light, visitors);
     lastMs = null;
     render(performance.now());
   };

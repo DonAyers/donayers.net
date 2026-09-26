@@ -172,6 +172,8 @@ export class Bird {
         this.timer -= dt * (world.light < 0.22 ? 4 : 1);
         if (world.random() < dt * 0.4) this.facing = -this.facing; // look around
         if (this.perch.kind === "wall") this.watchCats(dt, world, 0.5);
+        // A helicopter circling low clears the wires.
+        if (world.helicopter?.hovering && world.random() < dt * 0.15) return this.flyTo(world, null);
         if (this.timer <= 0) this.decide(world);
         break;
       case "ground": {

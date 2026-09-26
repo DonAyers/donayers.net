@@ -381,6 +381,8 @@ export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPos
   }
 
   drawClouds(px, layout, sky, t);
+  // Planes are miles off: a touch of haze, behind the skyline and palms.
+  life?.drawHigh(px, cached((base) => lit(base, sky.light, 0.25)), t);
 
   const mountain = packLab(mixLab(sky.haze, sky.sky[4]!, 0.3));
   for (let x = 0; x < width; x++) px.rect(x, horizon - Math.round(layout.mountains[x]!), 1, Math.round(layout.mountains[x]!) + 1, mountain);
@@ -404,8 +406,10 @@ export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPos
     wire: lit(BASE.wire, sky.light),
   });
 
-  // Birds up on the wires share the background's lighting.
-  life?.drawBack(px, cached((base) => lit(base, sky.light)), t);
+  // Birds up on the wires and the helicopter share the background's lighting.
+  const background = cached((base) => lit(base, sky.light));
+  life?.drawBack(px, background, t);
+  life?.drawAir(px, background, t);
 
   drawWall(px, layout, sky, lit);
 
@@ -418,6 +422,7 @@ export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPos
   life?.drawWall(px, paint, t);
   drawYard(px, layout.yard, paint, t, wind, life?.yardDrawables(paint, t));
   life?.drawFront(px, paint, t);
+  life?.drawBeam(px);
 }
 
 /** Memoise a colour function for the frame (colours are keyed by identity). */

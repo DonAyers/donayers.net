@@ -112,6 +112,58 @@ test("rotating the phone keeps everyone, in the yard, mid-story", () => {
   drawScene(new Pixels(168, 362), tall, skyAt(20), { altitude: 20, azimuth: 268 }, 1, life);
 });
 
+test("planes come over every minute or so; the helicopter every few", () => {
+  const layout = createLayout(384, 216);
+  const light = skyAt(20).light;
+  const life = new Life(geometry(layout), light, { random: rng(17) });
+  const planes = new Set<object>();
+  const helicopters = new Set<object>();
+  for (let i = 0; i < 900 / DT; i++) {
+    life.update(DT, light);
+    if (life.plane) planes.add(life.plane);
+    if (life.helicopter) helicopters.add(life.helicopter);
+  }
+  expect(planes.size).toBeGreaterThanOrEqual(6);
+  expect(planes.size).toBeLessThanOrEqual(25);
+  expect(helicopters.size).toBeGreaterThanOrEqual(1);
+  expect(helicopters.size).toBeLessThanOrEqual(5);
+});
+
+test("at night the helicopter circles, the cats look up, and its searchlight lights the yard", () => {
+  const layout = createLayout(384, 216);
+  const sky = skyAt(-25);
+  const life = new Life(geometry(layout), sky.light, { random: rng(5), helicopterSoon: true });
+  let hovered = false;
+  let catsLookedUp = false;
+  let litUp = false;
+  for (let i = 0; i < 150 / DT && !(hovered && life.helicopter === null); i++) {
+    life.update(DT, sky.light);
+    const heli = life.helicopter;
+    if (heli?.hovering) {
+      hovered = true;
+      catsLookedUp ||= life.cats.some((c) => c.activity.kind === "stare");
+      const spotX = Math.round(heli.spot.x);
+      if (!litUp && i % 30 === 0 && spotX > 0 && spotX < 384) {
+        // Same frame drawn with and without the beam: the spot is brighter with it.
+        const brightness = (c: number) => (c & 255) + ((c >> 8) & 255) + ((c >> 16) & 255);
+        const at = Math.round(heli.spot.y) * 384 + spotX;
+        const lit = new Pixels(384, 216);
+        drawScene(lit, layout, sky, { altitude: -25, azimuth: 268 }, i * DT, life);
+        const saved = life.light;
+        life.light = 1; // searchlight is off in daylight
+        const unlit = new Pixels(384, 216);
+        drawScene(unlit, layout, sky, { altitude: -25, azimuth: 268 }, i * DT, life);
+        life.light = saved;
+        litUp = brightness(lit.data[at]!) > brightness(unlit.data[at]!) + 60;
+      }
+    }
+  }
+  expect(hovered).toBe(true);
+  expect(catsLookedUp).toBe(true);
+  expect(litUp).toBe(true);
+  expect(life.helicopter).toBeNull(); // it left again
+});
+
 test("the same seed tells the same story", () => {
   const a = simulate(20, 60, 42);
   const b = simulate(20, 60, 42);

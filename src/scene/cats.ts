@@ -260,6 +260,7 @@ export class Cat {
   private sensed = 0;
   private skin: Skin;
   private noticedPossum = false;
+  private noticedHelicopter = false;
   /** Covering ground during an activity that otherwise sits (batting at moths). */
   private moving = false;
   /** Runs when a timed activity ends; defaults to picking something new. */
@@ -453,6 +454,18 @@ export class Cat {
       return;
     }
     if (!w.possum) this.noticedPossum = false;
+
+    // The LAPD helicopter circling overhead: stop and stare up at it.
+    const heli = w.helicopter;
+    if (heli?.hovering && !this.noticedHelicopter) {
+      this.noticedHelicopter = true;
+      if (a.kind !== "sleep" || w.random() < 0.3) {
+        this.set({ kind: "stare", at: () => (heli.hovering ? { x: heli.x, y: heli.y } : null), until: 6 + w.random() * 8, chatter: false });
+        this.activityThen = () => this.groom();
+      }
+      return;
+    }
+    if (!heli) this.noticedHelicopter = false;
 
     const calm = a.kind === "sit" || a.kind === "loaf" || a.kind === "groom" || (a.kind === "walk" && a.gait === "walk" && !a.then);
     if (!calm) return;

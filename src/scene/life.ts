@@ -1,6 +1,7 @@
 // Everything alive in the scene: two cats, a few sparrows, moths after dark,
 // and a rare possum. Life owns the shared world state the actors read, spawns
 // and retires visitors, and sorts actors into the right draw layer.
+import { Helicopter, Plane } from "./aircraft.ts";
 import { Bird } from "./birds.ts";
 import { Cat, PERSONALITIES } from "./cats.ts";
 import { hex } from "./color.ts";
@@ -29,6 +30,7 @@ export interface World {
   readonly birds: Bird[];
   readonly moths: Moth[];
   readonly possum: Possum | null;
+  readonly helicopter: Helicopter | null;
   wireAt(wire: number, x: number): number;
   dust(x: number, y: number, count: number): void;
 }
@@ -48,6 +50,9 @@ export interface LifeOptions {
   random?: () => number;
   /** Send a possum over the wall within a few seconds (for previews). */
   possumSoon?: boolean;
+  /** Same for a plane overhead, and the LAPD helicopter. */
+  planeSoon?: boolean;
+  helicopterSoon?: boolean;
 }
 
 interface Particle {
@@ -74,9 +79,13 @@ export class Life implements World {
   birds: Bird[] = [];
   moths: Moth[] = [];
   possum: Possum | null = null;
+  plane: Plane | null = null;
+  helicopter: Helicopter | null = null;
   private particles: Particle[] = [];
   private possumCooldown: number;
   private possumSoon: boolean;
+  private planeCooldown: number;
+  private helicopterCooldown: number;
 
   constructor(geo: Geometry, light: number, options: LifeOptions = {}) {
     this.width = geo.width;
@@ -90,6 +99,9 @@ export class Life implements World {
     this.light = light;
     this.possumSoon = !!options.possumSoon;
     this.possumCooldown = this.possumSoon ? 3 : 45;
+    // Early enough that most visits see a plane; the helicopter takes longer to turn up.
+    this.planeCooldown = options.planeSoon ? 1 : 8 + this.random() * 12;
+    this.helicopterCooldown = options.helicopterSoon ? 1 : 40 + this.random() * 40;
     this.cats = [
       new Cat(PERSONALITIES.calico, geo.spots.calico.x, geo.spots.calico.y, this),
       new Cat(PERSONALITIES.tabby, geo.spots.tabby.x, geo.spots.tabby.y, this),
@@ -108,6 +120,7 @@ export class Life implements World {
     const from = this.bounds;
     const to = { left: 10, right: geo.width - 10, top: geo.yardTop + 9, bottom: geo.yardBottom - 1 };
     const mapY = (y: number) => to.top + ((y - from.top) / Math.max(1, from.bottom - from.top)) * (to.bottom - to.top);
+    const oldHorizon = this.horizon;
 
     this.width = geo.width;
     this.height = geo.height;
@@ -132,6 +145,12 @@ export class Life implements World {
       moth.y = mapY(moth.y);
     }
     if (this.possum) this.possum.x *= sx;
+    const sy = geo.horizon / Math.max(1, oldHorizon);
+    if (this.plane) {
+      this.plane.x *= sx;
+      this.plane.y *= sy;
+    }
+    this.helicopter?.rescale(sx, sy);
     this.particles = [];
   }
 
@@ -164,10 +183,26 @@ export class Life implements World {
       this.possumSoon = false;
     }
 
+    // Planes: about one a minute. The helicopter: every few minutes, more often after dark.
+    this.planeCooldown -= dt;
+    if (!this.plane && this.planeCooldown <= 0) this.plane = new Plane(this);
+    this.helicopterCooldown -= dt;
+    if (!this.helicopter && this.helicopterCooldown <= 0) this.helicopter = new Helicopter(this);
+
     for (const cat of this.cats) cat.update(dt);
     for (const bird of this.birds) bird.update(dt, this);
     for (const moth of this.moths) moth.update(dt, this);
     this.possum?.update(dt, this);
+    this.plane?.update(dt, this);
+    this.helicopter?.update(dt, this);
+    if (this.plane?.gone) {
+      this.plane = null;
+      this.planeCooldown = 25 + r() * 60;
+    }
+    if (this.helicopter?.gone) {
+      this.helicopter = null;
+      this.helicopterCooldown = (light < 0.25 ? 90 : 180) + r() * 120;
+    }
 
     this.birds = this.birds.filter((b) => !b.gone);
     this.moths = this.moths.filter((m) => !m.gone);
@@ -186,6 +221,21 @@ export class Life implements World {
   }
 
   // ---- Layers, back to front ----
+
+  /** Planes: far off, up with the clouds (behind palms and downtown). */
+  drawHigh(px: Pixels, paint: Paint, t: number) {
+    this.plane?.draw(px, paint, t, this.light);
+  }
+
+  /** The helicopter: over the neighbourhood, in front of the palms and wires. */
+  drawAir(px: Pixels, paint: Paint, t: number) {
+    this.helicopter?.draw(px, paint, t);
+  }
+
+  /** The searchlight, over everything it lights up. */
+  drawBeam(px: Pixels) {
+    this.helicopter?.drawBeam(px, this.light);
+  }
 
   /** Birds on the wires or flying above the wall line, lit like the background. */
   drawBack(px: Pixels, paint: Paint, t: number) {
