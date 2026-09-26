@@ -61,6 +61,28 @@ test("a possum can be summoned, and it walks off the other side", () => {
   expect(run.life.possum).toBeNull(); // gone again: ~420px at 7px/s plus pauses
 });
 
+test("cats never slide around while sitting, lying or grooming", () => {
+  for (const [altitude, seed] of [[20, 7], [-25, 11], [-3, 5]] as const) {
+    const layout = createLayout(384, 216);
+    const light = skyAt(altitude).light;
+    const life = new Life(geometry(layout), light, { random: rng(seed) });
+    let slides = 0;
+    let stationaryFrames = 0;
+    for (let i = 0; i < 600 / DT; i++) {
+      const before = life.cats.map((c) => ({ activity: c.activity, x: c.x, y: c.y }));
+      life.update(DT, light);
+      life.cats.forEach((cat, j) => {
+        const prev = before[j]!;
+        if (cat.activity !== prev.activity || !cat.stationary) return;
+        stationaryFrames++;
+        if (cat.x !== prev.x || cat.y !== prev.y) slides++;
+      });
+    }
+    expect(stationaryFrames).toBeGreaterThan(1000);
+    expect({ altitude, slides }).toEqual({ altitude, slides: 0 });
+  }
+});
+
 test("rotating the phone keeps everyone, in the yard, mid-story", () => {
   const random = rng(21);
   const wide = createLayout(384, 216);

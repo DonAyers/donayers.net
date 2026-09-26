@@ -259,6 +259,8 @@ export class Cat {
   private sensed = 0;
   private skin: Skin;
   private noticedPossum = false;
+  /** Covering ground during an activity that otherwise sits (batting at moths). */
+  private moving = false;
   /** Runs when a timed activity ends; defaults to picking something new. */
   private activityThen: (() => void) | null = null;
 
@@ -281,6 +283,14 @@ export class Cat {
   get busy() {
     const k = this.activity.kind;
     return k === "fight" || k === "leap" || k === "wiggle";
+  }
+
+  /** The pose drawn right now stays put (sitting, lying, grooming…): the cat must not slide. */
+  get stationary(): boolean {
+    const k = this.activity.kind;
+    if (k === "walk" || k === "leap") return false;
+    if (k === "bat") return !this.moving && this.z <= 1;
+    return true;
   }
 
   /** How alarming this cat looks to a bird: 0 calm … 1 about to pounce. */
@@ -528,8 +538,12 @@ export class Cat {
           break;
         }
         const dx = m.x - this.x;
-        if (Math.abs(dx) > 3) {
-          this.x += Math.sign(dx) * Math.min(Math.abs(dx), this.persona.speed * 1.6 * dt);
+        // Trot to get under it (walking pose); only sit up to watch once there.
+        this.moving = Math.abs(dx) > 3;
+        if (this.moving) {
+          const move = Math.min(Math.abs(dx), this.persona.speed * 1.6 * dt);
+          this.x += Math.sign(dx) * move;
+          this.step += move;
           this.facing = dx > 0 ? 1 : -1;
         }
         // Hop and swat whenever it dips within reach.
@@ -542,11 +556,14 @@ export class Cat {
       case "fight":
         if (a.leader && this.world.random() < dt * 6) this.world.dust(this.x + this.rand(-8, 8), this.y, 1);
         if (this.clock > a.until) {
-          // Spring apart, then groom as if nothing happened.
-          this.x += a.leader ? -9 : 9;
-          this.facing = a.leader ? -1 : 1;
-          this.x = clamp(this.x, this.world.bounds.left, this.world.bounds.right);
-          this.groom();
+          // Spring apart with a hop, then groom as if nothing happened.
+          const dir = a.leader ? -1 : 1;
+          const b = this.world.bounds;
+          this.facing = dir;
+          this.set({
+            kind: "leap", x0: this.x, y0: this.y, x1: clamp(this.x + dir * 10, b.left, b.right), y1: this.y,
+            height: 5, dur: 0.35, then: () => this.groom(),
+          });
         }
         break;
     }
@@ -602,7 +619,9 @@ export class Cat {
       case "leap":
         return { shape: SHAPES.pounce, closed: false };
       case "bat":
-        return { shape: this.z > 1 ? SHAPES.pounce : SHAPES.lookUp, closed: false };
+        if (this.z > 1) return { shape: SHAPES.pounce, closed: false };
+        if (this.moving) return { shape: SHAPES.walk, closed: false, legs: LEGS[Math.floor(this.step / 3) % 4] };
+        return { shape: SHAPES.lookUp, closed: false };
       case "fight":
         return { shape: SHAPES.curl, closed: true };
     }
