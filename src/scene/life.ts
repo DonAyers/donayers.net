@@ -61,14 +61,14 @@ interface Particle {
 const DUST = hex("#b89a72");
 
 export class Life implements World {
-  readonly width: number;
-  readonly height: number;
-  readonly horizon: number;
-  readonly wallTop: number;
-  readonly bounds: World["bounds"];
-  readonly spots: World["spots"];
+  width: number;
+  height: number;
+  horizon: number;
+  wallTop: number;
+  bounds: World["bounds"];
+  spots: World["spots"];
   readonly random: () => number;
-  readonly wireAt: (wire: number, x: number) => number;
+  wireAt: (wire: number, x: number) => number;
   light = 1;
   cats: Cat[];
   birds: Bird[] = [];
@@ -97,6 +97,42 @@ export class Life implements World {
     // Start the scene already populated for the time of day.
     if (light > 0.3) for (let i = 0; i < 3; i++) this.birds.push(Bird.perchedOnWire(this));
     if (light < 0.35) for (let i = 0; i < 2; i++) this.spawnMoth();
+  }
+
+  /**
+   * The screen changed shape (rotation, resize): carry everyone over to the new
+   * layout in proportion instead of starting the story again.
+   */
+  resize(geo: Geometry) {
+    const sx = geo.width / this.width;
+    const from = this.bounds;
+    const to = { left: 10, right: geo.width - 10, top: geo.yardTop + 9, bottom: geo.yardBottom - 1 };
+    const mapY = (y: number) => to.top + ((y - from.top) / Math.max(1, from.bottom - from.top)) * (to.bottom - to.top);
+
+    this.width = geo.width;
+    this.height = geo.height;
+    this.horizon = geo.horizon;
+    this.wallTop = geo.wallTop;
+    this.wireAt = geo.wireAt;
+    this.bounds = to;
+    this.spots = { nap: geo.spots.nap, dirt: geo.spots.dirt };
+
+    for (const cat of this.cats) {
+      cat.x = Math.min(to.right, Math.max(to.left, cat.x * sx));
+      cat.y = Math.min(to.bottom, Math.max(to.top, mapY(cat.y)));
+      // Anything heading for a spot in the old layout needs a new plan.
+      if (cat.activity.kind === "walk" || cat.activity.kind === "leap") {
+        cat.z = 0;
+        cat.choose();
+      }
+    }
+    for (const bird of this.birds) bird.rescale(this, sx, mapY);
+    for (const moth of this.moths) {
+      moth.x *= sx;
+      moth.y = mapY(moth.y);
+    }
+    if (this.possum) this.possum.x *= sx;
+    this.particles = [];
   }
 
   dust(x: number, y: number, count: number) {

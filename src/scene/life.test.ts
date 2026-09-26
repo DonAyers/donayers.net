@@ -61,6 +61,31 @@ test("a possum can be summoned, and it walks off the other side", () => {
   expect(run.life.possum).toBeNull(); // gone again: ~420px at 7px/s plus pauses
 });
 
+test("rotating the phone keeps everyone, in the yard, mid-story", () => {
+  const random = rng(21);
+  const wide = createLayout(384, 216);
+  const life = new Life(geometry(wide), skyAt(20).light, { random });
+  for (let i = 0; i < 30 / DT; i++) life.update(DT, skyAt(20).light);
+  const birds = life.birds.length;
+
+  const tall = createLayout(168, 362);
+  life.resize(geometry(tall));
+  for (let i = 0; i < 120 / DT; i++) {
+    life.update(DT, skyAt(20).light);
+    for (const cat of life.cats) {
+      expect(cat.x).toBeGreaterThanOrEqual(life.bounds.left);
+      expect(cat.x).toBeLessThanOrEqual(life.bounds.right);
+      expect(cat.y).toBeGreaterThanOrEqual(life.bounds.top);
+      expect(cat.y).toBeLessThanOrEqual(life.bounds.bottom);
+    }
+  }
+  expect(life.cats).toHaveLength(2);
+  expect(birds).toBeGreaterThan(0);
+  for (const bird of life.birds) expect(bird.x).toBeLessThan(200);
+  // And it still draws.
+  drawScene(new Pixels(168, 362), tall, skyAt(20), { altitude: 20, azimuth: 268 }, 1, life);
+});
+
 test("the same seed tells the same story", () => {
   const a = simulate(20, 60, 42);
   const b = simulate(20, 60, 42);

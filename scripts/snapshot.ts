@@ -8,6 +8,7 @@ import { Life } from "../src/scene/life.ts";
 import { Pixels, rng } from "../src/scene/pixels.ts";
 import { createLayout, drawScene, geometry } from "../src/scene/scene.ts";
 import { skyAt } from "../src/scene/sky.ts";
+import { fitPixels } from "../src/scene/viewport.ts";
 
 const WIDTH = 384;
 const HEIGHT = 216;
@@ -152,6 +153,23 @@ for (const { name, big } of [sheet("8-life-day", 20, 5), sheet("9-life-night", -
   const file = join(outDir, "10-cat-poses.png");
   await Bun.write(file, png(px, 5));
   console.log(file);
+}
+
+// Portrait phone (iPhone-sized), at dusk and in the afternoon, after the yard
+// has been running for a bit.
+{
+  const fit = fitPixels(390, 844, 3);
+  const tall = createLayout(fit.width, fit.height);
+  for (const [name, altitude] of [["11-portrait-dusk", -4], ["12-portrait-day", 25]] as const) {
+    const sky = skyAt(altitude);
+    const life = new Life(geometry(tall), sky.light, { random: rng(8) });
+    for (let i = 0; i < 20 * 30; i++) life.update(1 / 30, sky.light);
+    const px = new Pixels(fit.width, fit.height);
+    drawScene(px, tall, sky, { altitude, azimuth: 268 }, 20, life);
+    const file = join(outDir, `${name}.png`);
+    await Bun.write(file, png(px, 3));
+    console.log(file);
+  }
 }
 
 // Close-up of the yard at golden hour, for sprite work.

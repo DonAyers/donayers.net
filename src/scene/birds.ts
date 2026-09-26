@@ -117,6 +117,18 @@ export class Bird {
     this.state = "fly";
   }
 
+  /** Follow a layout change: keep our place, re-snapped to wherever we're standing. */
+  rescale(world: World, sx: number, mapY: (y: number) => number) {
+    this.x = Math.round(this.x * sx);
+    if (this.state === "perch") {
+      this.y = this.perch.kind === "wire" ? world.wireAt(this.perch.wire, this.x) : world.wallTop;
+    } else if (this.state === "ground") {
+      this.y = mapY(this.y);
+    } else if (this.state === "fly" && this.flight) {
+      this.flyTo(world, this.flight.dest); // re-aim at a spot in the new layout
+    }
+  }
+
   /** Something scary happened nearby. */
   startle(world: World, cascade: boolean) {
     if (this.state !== "ground" && !(this.state === "perch" && this.perch.kind === "wall")) return;

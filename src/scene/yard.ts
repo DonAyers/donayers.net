@@ -3,6 +3,7 @@
 // Positions are designed for a 384px-wide scene and spread to fit others.
 import { type RGB, hex } from "./color.ts";
 import { BAYER, type Pixels, hash2, rng, sprite } from "./pixels.ts";
+import { isTall } from "./viewport.ts";
 
 /** Maps a daylight colour to how it looks under the current sky. */
 export type Paint = (base: RGB) => number;
@@ -162,12 +163,55 @@ export interface Yard {
   spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
 }
 
+export const BED_A_WIDTH = 66;
+export const BED_B_WIDTH = 54;
+
+export interface Composition {
+  tall: boolean;
+  /** Tree bases, and bed centres at their front base line. */
+  lime: Point;
+  lemon: Point;
+  bedA: Point;
+  bedB: Point;
+  dirt: Point;
+  stones: Point[];
+  spots: { calico: Point; tabby: Point; nap: Point[] };
+}
+
+/**
+ * Where everything goes. Wide screens spread the yard side to side (offsets
+ * designed for a 384px scene); tall screens stack it front to back instead, so
+ * a portrait phone still gets every tree, bed and cat.
+ */
+export function composition(width: number, top: number, bottom: number): Composition {
+  const height = bottom - top;
+  const tall = isTall(width, bottom);
+  const spread = Math.min(1.5, Math.max(0.6, width / 384));
+  const Y = (depth: number) => Math.round(top + height * depth);
+  // [wide: offset from centre, depth] [tall: fraction of width, depth]
+  const at = (wx: number, wd: number, tx: number, td: number): Point =>
+    tall ? { x: Math.round(width * tx), y: Y(td) } : { x: Math.round(width / 2 + wx * spread), y: Y(wd) };
+  return {
+    tall,
+    lime: at(-130, 0.3, 0.2, 0.2),
+    lemon: at(128, 0.42, 0.85, 0.3),
+    bedA: at(-50, 0.56, 0.36, 0.44),
+    bedB: at(48, 0.66, 0.68, 0.64),
+    dirt: at(92, 0.84, 0.78, 0.86),
+    stones: [at(-8, 0.98, 0.44, 0.98), at(6, 0.84, 0.5, 0.9), at(-5, 0.7, 0.44, 0.82)],
+    spots: {
+      calico: at(8, 0.97, 0.62, 0.96),
+      tabby: at(-104, 0.9, 0.22, 0.9),
+      // Tabby naps in the lime tree's shade; the calico by the pepper bed.
+      nap: [at(-112, 0.46, 0.24, 0.36), at(20, 0.8, 0.82, 0.84)],
+    },
+  };
+}
+
 export function createYard(width: number, top: number, bottom: number): Yard {
   const random = rng(4242);
   const height = bottom - top;
-  const spread = Math.min(1.5, Math.max(0.6, width / 384));
-  const X = (offset: number) => Math.round(width / 2 + offset * spread);
-  const Y = (depth: number) => Math.round(top + height * depth);
+  const place = composition(width, top, bottom);
 
   const grass = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
@@ -182,8 +226,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
 
   // A bare dirt patch (for rolling in) and stepping stones up the middle —
   // flat on the ground, so drawn before everything else.
-  const dirt = { x: X(92), y: Y(0.84) };
-  const stones = [[-8, 0.98], [6, 0.84], [-5, 0.7]] as const;
+  const { dirt, stones } = place;
   add(top, (px, paint) => {
     const soil = [paint(C.soil), paint(C.dirt), paint(C.dirtLight)];
     for (let dy = -4; dy <= 3; dy++) {
@@ -194,9 +237,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
         px.set(dirt.x + dx, dirt.y + dy, soil[n < 0.2 ? 0 : n > 0.85 ? 2 : 1]!);
       }
     }
-    for (const [offset, depth] of stones) {
-      const x = X(offset);
-      const y = Y(depth);
+    for (const { x, y } of stones) {
       px.rect(x - 5, y - 2, 11, 4, paint(C.stone));
       px.rect(x - 6, y - 1, 13, 2, paint(C.stone));
       px.rect(x - 4, y + 2, 9, 1, paint(C.stoneDark));
@@ -206,8 +247,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
 
   // Lime tree, planted near the wall.
   {
-    const x = X(-130);
-    const base = Y(0.3);
+    const { x, y: base } = place.lime;
     const crown = canopy(random, 21, 9, 14);
     add(base, (px, paint, t, wind) => {
       const sway = Math.round(Math.sin(t * 0.8 + 1) * wind);
@@ -226,8 +266,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
 
   // Small lemon tree in a terracotta pot.
   {
-    const x = X(128);
-    const base = Y(0.42);
+    const { x, y: base } = place.lemon;
     const crown = canopy(random, 13, 6, 8);
     add(base, (px, paint, t, wind) => {
       const sway = Math.round(Math.sin(t * 1.1 + 2) * wind);
@@ -252,9 +291,8 @@ export function createYard(width: number, top: number, bottom: number): Yard {
 
   // Raised bed A: San Marzano tomato on a stake, Japanese cucumber on a trellis.
   {
-    const cx = X(-50);
-    const base = Y(0.56);
-    const bedW = 66;
+    const { x: cx, y: base } = place.bedA;
+    const bedW = BED_A_WIDTH;
     const left = cx - bedW / 2;
     const soil = base - 15;
     const clusters = Array.from({ length: 7 }, (_, i) => canopy(random, i < 4 ? 7 : 6, 3, 0));
@@ -302,9 +340,8 @@ export function createYard(width: number, top: number, bottom: number): Yard {
 
   // Raised bed B: spicy peppers.
   {
-    const cx = X(48);
-    const base = Y(0.66);
-    const bedW = 54;
+    const { x: cx, y: base } = place.bedB;
+    const bedW = BED_B_WIDTH;
     const left = cx - bedW / 2;
     const soil = base - 15;
     const bushes = Array.from({ length: 3 }, () => canopy(random, 9, 5, 0));
@@ -333,14 +370,7 @@ export function createYard(width: number, top: number, bottom: number): Yard {
   }
 
   items.sort((a, b) => a.depth - b.depth);
-  const spots = {
-    calico: { x: X(8), y: Y(0.97) },
-    tabby: { x: X(-104), y: Y(0.9) },
-    // Tabby naps in the lime tree's shade; the calico by the pepper bed.
-    nap: [{ x: X(-112), y: Y(0.46) }, { x: X(20), y: Y(0.8) }],
-    dirt,
-  };
-  return { top, bottom, width, grass, items, spots };
+  return { top, bottom, width, grass, items, spots: { ...place.spots, dirt } };
 }
 
 type Drawable = { depth: number; draw: (px: Pixels) => void };

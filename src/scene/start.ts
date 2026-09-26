@@ -7,9 +7,8 @@ import { Pixels } from "./pixels.ts";
 import { type Layout, createLayout, drawScene, geometry } from "./scene.ts";
 import { skyAt } from "./sky.ts";
 import { sunPosition } from "./sun.ts";
+import { fitPixels } from "./viewport.ts";
 
-/** Roughly how many virtual pixels tall the scene is. */
-const TARGET_HEIGHT = 200;
 const FRAME_MS = 1000 / 30;
 
 export function startScene({ still }: { still: boolean }) {
@@ -19,9 +18,9 @@ export function startScene({ still }: { still: boolean }) {
   const clock = SceneClock.fromLocation(location.search);
 
   const possumSoon = new URLSearchParams(location.search).has("possum");
-  let px: Pixels;
+  let px: Pixels | null = null;
   let layout: Layout;
-  let life: Life;
+  let life: Life | null = null;
   let label = "";
   let lastMs: number | null = null;
 
@@ -29,6 +28,7 @@ export function startScene({ still }: { still: boolean }) {
     const date = clock.now();
     const sun = sunPosition(date);
     const sky = skyAt(sun.altitude);
+    if (!px || !life) return;
     if (!still && lastMs !== null) life.update(Math.min(0.1, (ms - lastMs) / 1000), sky.light);
     lastMs = ms;
     drawScene(px, layout, sky, sun, still ? 0 : ms / 1000, life);
@@ -38,18 +38,21 @@ export function startScene({ still }: { still: boolean }) {
   };
 
   const resize = () => {
-    // Scale in device pixels so every virtual pixel is an exact square.
+    // Scale in device pixels so every scene pixel is an exact square. Portrait
+    // screens get a taller scene (and a stacked yard) rather than a cropped one.
     const dpr = devicePixelRatio || 1;
-    const scale = Math.max(2, Math.round((innerHeight * dpr) / TARGET_HEIGHT));
-    const width = Math.ceil((innerWidth * dpr) / scale);
-    const height = Math.ceil((innerHeight * dpr) / scale);
-    canvas.width = width;
-    canvas.height = height;
+    const { scale, width, height } = fitPixels(innerWidth, innerHeight, dpr);
     canvas.style.width = `${(width * scale) / dpr}px`;
     canvas.style.height = `${(height * scale) / dpr}px`;
+    // Same pixel grid (e.g. a tiny resize, or the address bar settling)? Nothing to rebuild.
+    if (px && px.width === width && px.height === height) return;
+    canvas.width = width;
+    canvas.height = height;
     px = new Pixels(width, height);
     layout = createLayout(width, height);
-    life = new Life(geometry(layout), skyAt(sunPosition(clock.now()).altitude).light, { possumSoon });
+    // Keep the cats and birds where they were (in proportion) instead of respawning them.
+    if (life) life.resize(geometry(layout));
+    else life = new Life(geometry(layout), skyAt(sunPosition(clock.now()).altitude).light, { possumSoon });
     lastMs = null;
     render(performance.now());
   };

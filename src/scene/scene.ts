@@ -6,6 +6,7 @@ import { BAYER, type Pixels, rng } from "./pixels.ts";
 import { type SkyState, gradientAt } from "./sky.ts";
 import type { SunPosition } from "./sun.ts";
 import type { Geometry, Life } from "./life.ts";
+import { isTall } from "./viewport.ts";
 import { type Yard, createYard, drawYard } from "./yard.ts";
 
 const BANDS = 30;
@@ -52,14 +53,17 @@ export interface Layout {
 
 export function createLayout(width: number, height: number): Layout {
   const random = rng(1987);
-  const yardHeight = Math.min(90, Math.max(44, Math.round(height * 0.28)));
+  // Tall (portrait) scenes get a deeper yard so things can stack front to back.
+  const yardHeight = isTall(width, height)
+    ? Math.min(160, Math.max(44, Math.round(height * 0.34)))
+    : Math.min(90, Math.max(44, Math.round(height * 0.28)));
   const wallHeight = Math.min(30, Math.max(14, Math.round(height * 0.11)));
   const yardTop = height - yardHeight;
   const wallTop = yardTop - wallHeight;
   const horizon = wallTop + 2;
 
   const mountains = new Float32Array(width);
-  const peak = height * 0.07;
+  const peak = Math.min(height, 216) * 0.07; // same hills whether the sky is short or tall
   for (let x = 0; x < width; x++) {
     mountains[x] = peak * (0.55 + 0.25 * Math.sin(x * 0.021 + 1.3) + 0.15 * Math.sin(x * 0.063 + 0.4) + 0.05 * Math.sin(x * 0.17));
   }
@@ -337,7 +341,7 @@ export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPos
   drawStars(px, layout, sky, t);
 
   if (sun.altitude > -3) {
-    const r = Math.max(3, Math.round(height * 0.028));
+    const r = Math.max(3, Math.round(Math.min(height, 216) * 0.028));
     px.disk(Math.round(sunX), Math.round(sunY), r, packLab(sky.sun));
     px.disk(Math.round(sunX), Math.round(sunY), r - 1, packLab(mixLab(sky.sun, WHITE, 0.35)));
   }
