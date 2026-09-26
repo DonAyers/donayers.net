@@ -1,81 +1,39 @@
 # donayers.net
 
-A modern web application built with Astro and TinaCMS, using GitHub as the content backend.
+A pixel-art Los Angeles back yard, rendered live in the browser. The sky follows the real sun position over LA right now; palms sway, and two cats, some sparrows, moths and the odd possum go about their business.
 
-## Tech Stack
+## Stack
 
-- **[Astro](https://astro.build/)** - Static site generator
-- **[TinaCMS](https://tina.io/)** - Git-backed headless CMS
-- **GitHub** - Content storage and version control
+- **[Bun](https://bun.com/)**: runtime, dev server, bundler and test runner
+- **Canvas 2D**: a low-res software framebuffer scaled up with sharp pixels; no rendering libraries
+- **No runtime dependencies**: the whole site is about 20 KB gzipped
 
-## Prerequisites
+## Scripts
 
-- Node.js 18+ 
-- npm or yarn
-- GitHub account
-
-## Getting Started
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/donayers.net.git
-cd donayers.net
+bun install
+bun run dev        # http://localhost:7420 (PORT to override)
+bun run build      # static site in dist/, prints gzip sizes
+bun run preview    # serve dist/ like GitHub Pages, http://localhost:7421
+bun test
+bun run typecheck
+bun run snapshot   # render time-of-day previews, behaviour sheets and a cat pose gallery to snapshots/
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+Preview any time of day with `?time=19:05` (LA time), time-lapse with `?speed=600`, or nudge with `[` and `]`. `?possum` sends a possum over the wall. `?plain` shows the plain HTML version.
 
-3. Run the development server:
-```bash
-npm run dev
-```
-
-4. Access TinaCMS:
-```bash
-npm run dev:tina
-```
-
-Visit `http://localhost:4321` to see your site.
-Visit `http://localhost:4321/admin` to access the CMS.
-
-## Project Structure
+## Layout
 
 ```
-/
-├── src/
-│   ├── pages/
-│   ├── components/
-│   └── layouts/
-├── content/
-├── tina/
-│   └── config.ts
-└── public/
+content/          markdown for the plain pages (dev projects, music, about)
+public/           copied as-is (CNAME, favicon, site.css)
+scripts/          dev server, build, preview, snapshot, content + fallback page rendering
+src/
+  main.ts         boot: scene, or plain page for ?plain
+  scene/          sun, sky palettes, colour (OKLab), pixel buffer, backdrop, yard
+                  life.ts + cats.ts / birds.ts / critters.ts: the NPCs
 ```
 
-## Available Scripts
+## Deploy
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-
-## GitHub Pages POC
-
-- The repository now includes `.github/workflows/deploy.yml` to build and deploy via GitHub Actions.
-- In the repository settings, set **Pages** to **GitHub Actions** as the source.
-- The workflow expects the `PUBLIC_TINA_CLIENT_ID` and `TINA_TOKEN` repository secrets that you already added.
-- The Pages build targets the custom domain `https://donayers.net`.
-- `public/CNAME` is committed so GitHub Pages can keep the custom domain attached to the site artifact.
-
-## Scheduled daily blog draft
-
-- `.github/workflows/daily-blog-post.yml` runs once per day and can also be triggered manually from the Actions tab.
-- The workflow installs GitHub Copilot CLI, reads `.github/prompts/daily-blog-post.md`, and writes or refreshes `src/content/blog/YYYY-MM-DD-daily-note.mdx`.
-- When the generated post changes, the workflow commits it to the repository default branch, which in turn triggers the existing Pages deploy workflow.
-- Add a repository secret named `COPILOT_CLI_PAT` backed by a fine-grained personal access token with the **Copilot Requests** permission for an account that has GitHub Copilot access.
-- Manual runs can supply a `prompt_override` input to steer a one-off post without changing the default daily prompt file.
-
-## License
-
-MIT
+Pushing to `main` runs `.github/workflows/deploy.yml`: tests, typecheck, build, then GitHub Pages (custom domain via `public/CNAME`).
