@@ -16,6 +16,8 @@ const C = {
   stoneLight: hex("#c8c2b6"),
   stoneDark: hex("#86807a"),
   soil: hex("#4a3526"),
+  dirt: hex("#7a5a3e"),
+  dirtLight: hex("#9a7a58"),
   wood: hex("#a0724a"),
   woodDark: hex("#74502f"),
   woodLight: hex("#c0905e"),
@@ -50,51 +52,6 @@ const C = {
 };
 
 // ---- Sprites ------------------------------------------------------------------
-
-const CALICO = {
-  rows: [
-    "..O.........K..",
-    "..OO.......KK..",
-    "..OPO.....KPK..",
-    "..OOOOWWWKKKK..",
-    ".OOOWWWWWWWKKK.",
-    ".OOWEWWWWWEWKK.",
-    ".OWWWWWPWWWWWK.",
-    "..WWWWsWsWWWW..",
-    "...WWWWWWWWW...",
-    "...WWWWWWWWWO..",
-    "..WWWWWWWWWOO..",
-    "..WWWWWWWWOOO..",
-    "..WWWWWWWWWOO..",
-    "..sWWWWWWWWWs..",
-    "..sWWKKWWWWWs..",
-    "...WW.WWW.WW...",
-  ],
-  colors: {
-    W: hex("#f4f0e8"), s: hex("#cfc9bd"), O: hex("#e0883a"), K: hex("#2e2a28"),
-    P: hex("#e89a9a"), E: hex("#3e4a26"),
-  },
-};
-
-const TABBY = {
-  rows: [
-    "..D..D..............",
-    "..DG.DG.............",
-    ".GGDGGG.............",
-    ".GDGDGG..GGGDGGGDG..",
-    "GGEGGGGGDGGGDGGGDGG.",
-    "PGGGGGGGDGGGDGGGDGGG",
-    ".LLGGGGGDGGGDGGGDGGG",
-    ".LLLGGGGDGGGDGGGDGGG",
-    ".LLLGGGGGDGGGDGGGDGG",
-    "..LLGGGGGDGGGDGGGDGG",
-    "...TTDTTTDTTTDTTTTT.",
-  ],
-  colors: {
-    G: hex("#8e8e94"), D: hex("#5c5c64"), L: hex("#c8c8ce"), P: hex("#d99a9a"),
-    E: hex("#d0e050"), T: hex("#7a7a82"),
-  },
-};
 
 const FRUIT = {
   tomato: { rows: [".g.", "RhR", "RRR", "RRR", ".R."], colors: { g: C.leafDark, R: C.tomato, h: C.tomatoLight } },
@@ -187,7 +144,12 @@ function bed(px: Pixels, paint: Paint, left: number, base: number, width: number
 
 // ---- Layout -------------------------------------------------------------------
 
-type Draw = (px: Pixels, paint: Paint, t: number, wind: number, asleep: boolean) => void;
+type Draw = (px: Pixels, paint: Paint, t: number, wind: number) => void;
+
+interface Point {
+  x: number;
+  y: number;
+}
 
 export interface Yard {
   top: number;
@@ -196,6 +158,8 @@ export interface Yard {
   /** Stable grass texture: 0 dark, 1 base, 2 light. */
   grass: Uint8Array;
   items: { depth: number; draw: Draw }[];
+  /** Places the cats care about. */
+  spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
 }
 
 export function createYard(width: number, top: number, bottom: number): Yard {
@@ -216,9 +180,20 @@ export function createYard(width: number, top: number, bottom: number): Yard {
   const items: Yard["items"] = [];
   const add = (depth: number, draw: Draw) => items.push({ depth, draw });
 
-  // Stepping stones up the middle — flat, so drawn before everything else.
+  // A bare dirt patch (for rolling in) and stepping stones up the middle —
+  // flat on the ground, so drawn before everything else.
+  const dirt = { x: X(92), y: Y(0.84) };
   const stones = [[-8, 0.98], [6, 0.84], [-5, 0.7]] as const;
   add(top, (px, paint) => {
+    const soil = [paint(C.soil), paint(C.dirt), paint(C.dirtLight)];
+    for (let dy = -4; dy <= 3; dy++) {
+      for (let dx = -15; dx <= 15; dx++) {
+        const d = (dx / 15) ** 2 + (dy / 4) ** 2;
+        if (d > 1 || (d > 0.7 && hash2(dx, dy, 61) < 0.5)) continue;
+        const n = hash2(dx, dy, 62);
+        px.set(dirt.x + dx, dirt.y + dy, soil[n < 0.2 ? 0 : n > 0.85 ? 2 : 1]!);
+      }
+    }
     for (const [offset, depth] of stones) {
       const x = X(offset);
       const y = Y(depth);
@@ -357,53 +332,21 @@ export function createYard(width: number, top: number, bottom: number): Yard {
     });
   }
 
-  // Grey tabby, loafing out front.
-  {
-    const x = X(-104) - 10;
-    const base = Y(0.9);
-    add(base, (px, paint, t, _wind, asleep) => {
-      groundShadow(px, paint, x + 10, base, 11);
-      const colors = paintAll(TABBY.colors, paint);
-      const blink = asleep || t % 5.1 < 0.15;
-      sprite(px, TABBY.rows, x, base, blink ? { ...colors, E: colors.D! } : colors);
-      if (!asleep && Math.sin(t * 1.3) > 0.6) px.rect(x + 1, base - 3, 2, 1, colors.T!); // tail-tip flick
-      if (!asleep && t % 7 < 0.3) px.set(x + 2, base - 11, colors.G!); // ear twitch
-      if (asleep) {
-        // A little "z" drifting up from his head.
-        const phase = (t * 0.45) % 1;
-        const zx = Math.round(x + 4 + phase * 5);
-        const zy = Math.round(base - 15 - phase * 10);
-        const z = paint(C.flowerWhite);
-        px.rect(zx, zy, 3, 1, z);
-        px.set(zx + 1, zy + 1, z);
-        px.rect(zx, zy + 2, 3, 1, z);
-      }
-    });
-  }
-
-  // White calico, sitting up with her tail swishing.
-  {
-    const x = X(8) - 7;
-    const base = Y(0.97);
-    add(base, (px, paint, t, _wind, asleep) => {
-      groundShadow(px, paint, x + 7, base, 8);
-      const colors = paintAll(CALICO.colors, paint);
-      const swish = Math.sin(t * 1.7);
-      const tail = colors.O!;
-      px.line(x + 11, base - 2, x + 16, base - 3, tail);
-      px.line(x + 16, base - 3, x + 17 + Math.round(swish), base - 8, tail);
-      px.line(x + 17 + Math.round(swish), base - 8, x + 16 + Math.round(swish * 2.5), base - 12, tail);
-      px.line(x + 12, base - 1, x + 16, base - 2, tail);
-      const blink = t % 4.3 < 0.15 || (asleep && t % 9 > 4);
-      sprite(px, CALICO.rows, x, base, blink ? { ...colors, E: colors.s! } : colors);
-    });
-  }
-
   items.sort((a, b) => a.depth - b.depth);
-  return { top, bottom, width, grass, items };
+  const spots = {
+    calico: { x: X(8), y: Y(0.97) },
+    tabby: { x: X(-104), y: Y(0.9) },
+    // Tabby naps in the lime tree's shade; the calico by the pepper bed.
+    nap: [{ x: X(-112), y: Y(0.46) }, { x: X(20), y: Y(0.8) }],
+    dirt,
+  };
+  return { top, bottom, width, grass, items, spots };
 }
 
-export function drawYard(px: Pixels, yard: Yard, paint: Paint, t: number, wind: number, asleep: boolean) {
+type Drawable = { depth: number; draw: (px: Pixels) => void };
+
+/** Grass, then the yard's plants merged back-to-front with `actors` (cats, birds). */
+export function drawYard(px: Pixels, yard: Yard, paint: Paint, t: number, wind: number, actors: Drawable[] = []) {
   const { top, bottom, width, grass } = yard;
   const tones = [paint(C.grassDark), paint(C.grass), paint(C.grassLight)];
   for (let y = top; y < bottom && y < px.height; y++) {
@@ -420,5 +363,10 @@ export function drawYard(px: Pixels, yard: Yard, paint: Paint, t: number, wind: 
     px.set(fx, fy, paint(i % 2 ? C.flowerWhite : C.flowerPurple));
     px.set(fx, fy + 1, tones[0]!);
   }
-  for (const item of yard.items) item.draw(px, paint, t, wind, asleep);
+  const layers: Drawable[] = [
+    ...yard.items.map((item) => ({ depth: item.depth, draw: (p: Pixels) => item.draw(p, paint, t, wind) })),
+    ...actors,
+  ];
+  layers.sort((a, b) => a.depth - b.depth);
+  for (const layer of layers) layer.draw(px);
 }

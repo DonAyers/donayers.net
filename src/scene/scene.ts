@@ -5,6 +5,7 @@ import { type Lab, type RGB, fromLab, hex, mixLab, multiply, packLab, toLab } fr
 import { BAYER, type Pixels, rng } from "./pixels.ts";
 import { type SkyState, gradientAt } from "./sky.ts";
 import type { SunPosition } from "./sun.ts";
+import type { Geometry, Life } from "./life.ts";
 import { type Yard, createYard, drawYard } from "./yard.ts";
 
 const BANDS = 30;
@@ -36,12 +37,6 @@ interface Star {
   phase: number;
 }
 
-interface Bird {
-  span: number;
-  u: number;
-  wire: number;
-}
-
 export interface Layout {
   width: number;
   height: number;
@@ -52,7 +47,6 @@ export interface Layout {
   clouds: Cloud[];
   stars: Star[];
   poles: { spacing: number; offset: number; top: number };
-  birds: Bird[];
   yard: Yard;
 }
 
@@ -104,15 +98,36 @@ export function createLayout(width: number, height: number): Layout {
 
   const spacing = Math.max(70, Math.round(width * 0.32));
   const poles = { spacing, offset: Math.round(spacing * 0.3), top: Math.round(horizon * 0.45) };
-  const spans = Math.max(1, Math.floor((width - poles.offset) / spacing));
-  const birds: Bird[] = Array.from({ length: 4 }, () => ({
-    span: Math.floor(random() * spans),
-    u: 0.2 + random() * 0.6,
-    wire: Math.floor(random() * 2),
-  }));
 
   const yard = createYard(width, yardTop, height);
-  return { width, height, horizon, wallTop, mountains, palms, clouds, stars, poles, birds, yard };
+  return { width, height, horizon, wallTop, mountains, palms, clouds, stars, poles, yard };
+}
+
+// Power lines, seen side-on, so each wire gets its own height to read as distinct.
+// [x offset from pole, y offset from pole top, sag as a fraction of span]
+const WIRES: [number, number, number][] = [[0, -1, 0.05], [0, 2, 0.065], [0, 6, 0.075], [1, 14, 0.1]];
+
+/** Height of wire `index` at screen x (the sag repeats every span). */
+export function wireAt(layout: Layout, index: number, x: number): number {
+  const wire = WIRES[index]!;
+  const { spacing, offset, top } = layout.poles;
+  const local = (((x - offset - wire[0]) % spacing) + spacing) % spacing;
+  const u = local / spacing;
+  return top + wire[1] + spacing * wire[2] * 4 * u * (1 - u);
+}
+
+/** What the living things need to know about the scene. */
+export function geometry(layout: Layout): Geometry {
+  return {
+    width: layout.width,
+    height: layout.height,
+    horizon: layout.horizon,
+    wallTop: layout.wallTop,
+    yardTop: layout.yard.top,
+    yardBottom: layout.yard.bottom,
+    wireAt: (index, x) => Math.round(wireAt(layout, index, x)),
+    spots: layout.yard.spots,
+  };
 }
 
 /** Gusty wind strength, 0..1. */
@@ -263,23 +278,19 @@ const FRONDS: [number, number, number][] = [
 function drawPowerLines(px: Pixels, layout: Layout, c: Record<"wood" | "insulator" | "transformer" | "wire", number>) {
   const { spacing, offset, top } = layout.poles;
   const { width, horizon } = layout;
-  // Seen side-on, so each wire gets its own height to read as distinct.
-  // [x offset from pole, y offset from pole top, sag as a fraction of span]
-  const wires: [number, number, number][] = [[0, -1, 0.05], [0, 2, 0.065], [0, 6, 0.075], [1, 14, 0.1]];
 
-  const wireY = (wire: [number, number, number], u: number) => top + wire[1] + spacing * wire[2] * 4 * u * (1 - u);
+  WIRES.forEach((_, index) => {
+    let prev: number | null = null;
+    for (let x = 0; x < width; x++) {
+      const y = Math.round(wireAt(layout, index, x));
+      if (prev !== null && Math.abs(y - prev) > 1) px.rect(x, Math.min(y, prev) + 1, 1, Math.abs(y - prev) - 1, c.wire);
+      px.set(x, y, c.wire);
+      prev = y;
+    }
+  });
 
   for (let k = -1; offset + k * spacing < width + spacing; k++) {
     const x = offset + k * spacing;
-    for (const wire of wires) {
-      let prev: number | null = null;
-      for (let xx = x + wire[0]; xx <= x + spacing + wire[0]; xx++) {
-        const y = Math.round(wireY(wire, (xx - x - wire[0]) / spacing));
-        if (prev !== null && Math.abs(y - prev) > 1) px.rect(xx, Math.min(y, prev) + 1, 1, Math.abs(y - prev) - 1, c.wire);
-        px.set(xx, y, c.wire);
-        prev = y;
-      }
-    }
     px.rect(x - 1, top, 2, horizon - top, c.wood);
     // Two crossarms with insulators, and a diagonal brace.
     px.rect(x - 10, top + 3, 21, 1, c.wood);
@@ -289,15 +300,6 @@ function drawPowerLines(px: Pixels, layout: Layout, c: Record<"wood" | "insulato
     for (const dx of [-6, 6]) px.set(x + dx, top + 6, c.insulator);
     px.set(x, top - 1, c.insulator);
     if (((k % 3) + 3) % 3 === 0) px.rect(x + 1, top + 16, 3, 5, c.transformer);
-  }
-
-  for (const bird of layout.birds) {
-    const wire = wires[bird.wire]!;
-    const bx = Math.round(offset + bird.span * spacing + wire[0] + bird.u * spacing);
-    const by = Math.round(wireY(wire, bird.u));
-    px.rect(bx - 1, by - 2, 3, 1, c.wire);
-    px.set(bx + 1, by - 3, c.wire);
-    px.set(bx - 2, by - 1, c.wire);
   }
 }
 
@@ -321,7 +323,7 @@ function drawWall(px: Pixels, layout: Layout, sky: SkyState, lit: (base: RGB, li
   px.rect(0, wallTop + 2, width, 1, lit(BASE.capShadow, l));
 }
 
-export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPosition, t: number) {
+export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPosition, t: number, life?: Life) {
   const { width, height, horizon } = layout;
   const wind = windAt(t);
   const lit = lighting(sky);
@@ -362,17 +364,28 @@ export function drawScene(px: Pixels, layout: Layout, sky: SkyState, sun: SunPos
     wire: lit(BASE.wire, sky.light),
   });
 
+  // Birds up on the wires share the background's lighting.
+  life?.drawBack(px, cached((base) => lit(base, sky.light)), t);
+
   drawWall(px, layout, sky, lit);
 
   // The yard is the foreground: it stays readable after dark (moonlit, not
   // black) and takes a softened version of the sky's tint so it keeps its colour.
   const yardSky = { ...sky, tint: mixLab(sky.tint, WHITE, 0.4) };
   const yardLight = 0.55 + 0.45 * sky.light;
+  const paint = cached((base) => packLab(litLab(yardSky, base, yardLight)));
+
+  life?.drawWall(px, paint, t);
+  drawYard(px, layout.yard, paint, t, wind, life?.yardDrawables(paint, t));
+  life?.drawFront(px, paint, t);
+}
+
+/** Memoise a colour function for the frame (colours are keyed by identity). */
+function cached(fn: (base: RGB) => number): (base: RGB) => number {
   const cache = new Map<RGB, number>();
-  const paint = (base: RGB) => {
+  return (base) => {
     let color = cache.get(base);
-    if (color === undefined) cache.set(base, (color = packLab(litLab(yardSky, base, yardLight))));
+    if (color === undefined) cache.set(base, (color = fn(base)));
     return color;
   };
-  drawYard(px, layout.yard, paint, t, wind, sky.light < 0.2);
 }

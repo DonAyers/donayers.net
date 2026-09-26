@@ -2,8 +2,9 @@
 // scale, then redraw at 30fps (pixel art doesn't need 60, and it's kinder to
 // batteries).
 import { SceneClock, formatLA } from "./clock.ts";
+import { Life } from "./life.ts";
 import { Pixels } from "./pixels.ts";
-import { type Layout, createLayout, drawScene } from "./scene.ts";
+import { type Layout, createLayout, drawScene, geometry } from "./scene.ts";
 import { skyAt } from "./sky.ts";
 import { sunPosition } from "./sun.ts";
 
@@ -17,14 +18,20 @@ export function startScene({ still }: { still: boolean }) {
   const ctx = canvas.getContext("2d")!;
   const clock = SceneClock.fromLocation(location.search);
 
+  const possumSoon = new URLSearchParams(location.search).has("possum");
   let px: Pixels;
   let layout: Layout;
+  let life: Life;
   let label = "";
+  let lastMs: number | null = null;
 
   const render = (ms: number) => {
     const date = clock.now();
     const sun = sunPosition(date);
-    drawScene(px, layout, skyAt(sun.altitude), sun, still ? 0 : ms / 1000);
+    const sky = skyAt(sun.altitude);
+    if (!still && lastMs !== null) life.update(Math.min(0.1, (ms - lastMs) / 1000), sky.light);
+    lastMs = ms;
+    drawScene(px, layout, sky, sun, still ? 0 : ms / 1000, life);
     ctx.putImageData(px.image, 0, 0);
     const next = `${formatLA(date)} · Los Angeles${clock.preview ? " (preview)" : ""}`;
     if (next !== label) clockLabel.textContent = label = next;
@@ -42,6 +49,8 @@ export function startScene({ still }: { still: boolean }) {
     canvas.style.height = `${(height * scale) / dpr}px`;
     px = new Pixels(width, height);
     layout = createLayout(width, height);
+    life = new Life(geometry(layout), skyAt(sunPosition(clock.now()).altitude).light, { possumSoon });
+    lastMs = null;
     render(performance.now());
   };
   resize();
