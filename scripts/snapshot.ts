@@ -89,6 +89,8 @@ for (const { name, big } of [sheet("8-life-day", 20, 5), sheet("9-life-night", -
     ["curl", { kind: "sleep", until: 99, belly: false }],
     ["belly", { kind: "sleep", until: 99, belly: true }, 0, ],
     ["roll", { kind: "roll", until: 99 }],
+    ["graze", { kind: "graze", tuft: { x: 0, y: 0, length: 1 }, until: 99 }],
+    ["gate roll", { kind: "roll", until: 99, backAndForth: true }],
   ];
   const cell = 30;
   const px = new Pixels(cell * (poses.length + 1), 64);

@@ -7,7 +7,7 @@ import { Cat, PERSONALITIES } from "./cats.ts";
 import { hex } from "./color.ts";
 import { Butterfly, type Flower, Moth, Possum } from "./critters.ts";
 import type { Pixels } from "./pixels.ts";
-import type { Paint } from "./yard.ts";
+import type { Paint, Tuft } from "./yard.ts";
 
 interface Point {
   x: number;
@@ -22,7 +22,9 @@ export interface World {
   readonly wallTop: number;
   /** Where cats (and grounded birds) can be. */
   readonly bounds: { left: number; right: number; top: number; bottom: number };
-  readonly spots: { nap: Point[]; dirt: Point };
+  readonly spots: { nap: Point[]; dirt: Point; gate: Point };
+  /** Long grass the tabby grazes on. */
+  readonly tufts: Tuft[];
   readonly random: () => number;
   /** Sky light, 0 night … 1 full day. */
   readonly light: number;
@@ -44,9 +46,10 @@ export interface Geometry {
   yardTop: number;
   yardBottom: number;
   wireAt: (wire: number, x: number) => number;
-  spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
+  spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point; gate: Point };
   /** Where butterflies land. */
   flowers: Flower[];
+  tufts: Tuft[];
 }
 
 export interface LifeOptions {
@@ -84,6 +87,7 @@ export class Life implements World {
   moths: Moth[] = [];
   butterflies: Butterfly[] = [];
   flowers: Flower[];
+  tufts: Tuft[];
   possum: Possum | null = null;
   plane: Plane | null = null;
   helicopter: Helicopter | null = null;
@@ -102,8 +106,9 @@ export class Life implements World {
     this.wireAt = geo.wireAt;
     this.random = options.random ?? Math.random;
     this.bounds = { left: 10, right: geo.width - 10, top: geo.yardTop + 9, bottom: geo.yardBottom - 1 };
-    this.spots = { nap: geo.spots.nap, dirt: geo.spots.dirt };
+    this.spots = { nap: geo.spots.nap, dirt: geo.spots.dirt, gate: geo.spots.gate };
     this.flowers = geo.flowers;
+    this.tufts = geo.tufts;
     this.light = light;
     this.possumSoon = !!options.possumSoon;
     this.crowSoon = !!options.crowSoon;
@@ -138,7 +143,8 @@ export class Life implements World {
     this.wallTop = geo.wallTop;
     this.wireAt = geo.wireAt;
     this.bounds = to;
-    this.spots = { nap: geo.spots.nap, dirt: geo.spots.dirt };
+    this.spots = { nap: geo.spots.nap, dirt: geo.spots.dirt, gate: geo.spots.gate };
+    this.tufts = geo.tufts;
 
     for (const cat of this.cats) {
       cat.x = Math.min(to.right, Math.max(to.left, cat.x * sx));
@@ -211,6 +217,9 @@ export class Life implements World {
     if (!this.plane && this.planeCooldown <= 0) this.plane = new Plane(this);
     this.helicopterCooldown -= dt;
     if (!this.helicopter && this.helicopterCooldown <= 0) this.helicopter = new Helicopter(this);
+
+    // Nibbled grass grows back over a few minutes.
+    for (const tuft of this.tufts) tuft.length = Math.min(1, tuft.length + dt * 0.003);
 
     for (const cat of this.cats) cat.update(dt);
     for (const bird of this.birds) bird.update(dt, this);

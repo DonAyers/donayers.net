@@ -141,6 +141,34 @@ test("the calico goes wild for butterflies (the tabby can't be bothered)", () =>
   expect(tabbyChased).toBe(false);
 });
 
+test("the calico rolls around in front of the gate; the tabby eats grass", () => {
+  const layout = createLayout(384, 216);
+  const light = skyAt(20).light;
+  const gate = layout.yard.spots.gate;
+  let calicoGateRolls = 0;
+  let tabbyGrazes = 0;
+  let wrongCat = false;
+  let shortestTuft = 1;
+  for (const seed of [4, 8, 15]) {
+    const life = new Life(geometry(layout), light, { random: rng(seed) });
+    for (let i = 0; i < 900 / DT; i++) {
+      life.update(DT, light);
+      const [calico, tabby] = life.cats as [(typeof life.cats)[0], (typeof life.cats)[0]];
+      const rollingAtGate = (c: typeof calico) =>
+        c.activity.kind === "roll" && c.activity.backAndForth && Math.abs(c.x - gate.x) < 10 && Math.abs(c.y - gate.y) < 6;
+      if (rollingAtGate(calico)) calicoGateRolls++;
+      if (tabby.activity.kind === "graze") tabbyGrazes++;
+      wrongCat ||= rollingAtGate(tabby) || calico.activity.kind === "graze";
+      for (const tuft of life.tufts) shortestTuft = Math.min(shortestTuft, tuft.length);
+    }
+    for (const tuft of layout.yard.tufts) tuft.length = 1; // shared with the layout; reset between runs
+  }
+  expect(calicoGateRolls).toBeGreaterThan(0);
+  expect(tabbyGrazes).toBeGreaterThan(0);
+  expect(wrongCat).toBe(false);
+  expect(shortestTuft).toBeLessThan(0.8); // eaten down
+});
+
 test("the occasional big crow sits on the wall and wires, and caws", () => {
   const layout = createLayout(384, 216);
   const light = skyAt(20).light;

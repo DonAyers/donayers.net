@@ -16,6 +16,8 @@ const C = {
   grass: hex("#5c8c3c"),
   grassDark: hex("#467030"),
   grassLight: hex("#78a84a"),
+  tallGrass: hex("#8cb44c"),
+  tallGrassLight: hex("#c2d87a"),
   shadow: hex("#34522a"),
   terrazzo: hex("#e2e0da"),
   terrazzoLight: hex("#eceae4"),
@@ -302,9 +304,11 @@ export interface Yard {
   grass: Uint8Array;
   items: { depth: number; draw: Draw; art?: ArtSlot }[];
   /** Places the cats care about. */
-  spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point };
+  spots: { calico: Point; tabby: Point; nap: Point[]; dirt: Point; gate: Point };
   /** Where butterflies land: x, ground depth under the bloom, and its height. */
   flowers: Flower[];
+  /** Long grass the tabby grazes on (shared, mutable: eaten tufts get shorter). */
+  tufts: Tuft[];
 }
 
 export const BED_A_WIDTH = 66;
@@ -324,7 +328,16 @@ export interface Composition {
   path: { x: number; top: number; bottom: number; width: number };
   /** Where the bougainvillea's trunk meets the ground, in the back-right corner. */
   bougainvillea: Point;
-  spots: { calico: Point; tabby: Point; nap: Point[] };
+  /** Tufts of long grass (the tabby eats them). */
+  tufts: Point[];
+  spots: { calico: Point; tabby: Point; nap: Point[]; gate: Point };
+}
+
+/** A tuft of long grass; `length` shrinks as it's eaten and slowly grows back. */
+export interface Tuft {
+  x: number;
+  y: number;
+  length: number;
 }
 
 /**
@@ -360,11 +373,17 @@ export function composition(width: number, top: number, bottom: number): Composi
     patio,
     path: { x: patio.x, top: patio.bottom + 1, bottom, width: 10 },
     bougainvillea: { x: width - Math.round((tall ? 18 : 40) * (tall ? 1 : spread)), y: top + 2 },
+    // Tufts of long grass, out on the lawn away from the beds and paving.
+    tufts: tall
+      ? [at(0, 0, 0.08, 0.78), at(0, 0, 0.3, 0.7), at(0, 0, 0.92, 0.72), at(0, 0, 0.4, 0.95)]
+      : [at(-160, 0.9, 0, 0), at(-95, 0.72, 0, 0), at(110, 0.78, 0, 0), at(165, 0.95, 0, 0)],
     spots: {
       calico: at(8, 0.97, 0.6, 0.96),
       tabby: at(-104, 0.9, 0.3, 0.9),
       // Tabby naps in the lime tree's shade (on the patio in portrait); the calico on the terrazzo.
       nap: [at(112, 0.46, 0.36, 0.2), at(12, 0.2, 0.62, 0.84)],
+      // On the terrazzo right in front of the gate, where the calico rolls around.
+      gate: { x: patio.x, y: patio.top + 5 },
     },
   };
 }
@@ -402,6 +421,23 @@ export function createYard(width: number, top: number, bottom: number, wallTop =
       }
     }
   });
+
+  // Tufts of long grass, swaying; they get shorter as the tabby eats them.
+  const tufts: Tuft[] = place.tufts.map((p) => ({ x: p.x, y: p.y, length: 1 }));
+  for (const [i, tuft] of tufts.entries()) {
+    const blades = Array.from({ length: 7 }, (_, j) => ({ dx: j - 3 + (hash2(i, j, 83) - 0.5), len: 8 + hash2(i, j, 84) * 6, lean: (hash2(i, j, 85) - 0.5) * 1.6 }));
+    add(tuft.y, (px, paint, t, wind) => {
+      const tones = [paint(C.tallGrass), paint(C.tallGrassLight), paint(C.grassDark)];
+      for (const [j, b] of blades.entries()) {
+        const len = Math.max(2, Math.round(b.len * tuft.length));
+        const sway = Math.sin(t * 1.7 + tuft.x * 0.1 + j) * wind * 1.2;
+        for (let k = 0; k < len; k++) {
+          const u = k / len;
+          px.set(tuft.x + b.dx + (b.lean * len + sway) * u * u, tuft.y - k, tones[k === len - 1 ? 1 : k < 2 ? 2 : 0]!);
+        }
+      }
+    });
+  }
 
   // Bougainvillea in the back-right corner: climbs the wall and spills over it.
   {
@@ -547,7 +583,7 @@ export function createYard(width: number, top: number, bottom: number, wallTop =
     { x: aLeft + 47, gy: place.bedA.y, h: 40 },
     { x: place.lemon.x, gy: place.lemon.y, h: 36 },
   ];
-  return { top, bottom, width, grass, items, spots: { ...place.spots, dirt }, flowers };
+  return { top, bottom, width, grass, items, spots: { ...place.spots, dirt }, flowers, tufts };
 }
 
 type Drawable = { depth: number; draw: (px: Pixels) => void };

@@ -9,7 +9,7 @@ import type { Bird } from "./birds.ts";
 import type { Butterfly, Moth } from "./critters.ts";
 import type { World } from "./life.ts";
 import { type Pixels, hash2 } from "./pixels.ts";
-import type { Paint } from "./yard.ts";
+import type { Paint, Tuft } from "./yard.ts";
 
 // ---- Shapes -------------------------------------------------------------------
 // All face right. Keys: B patterned fur, L light fur (muzzle, chest, paws),
@@ -124,6 +124,16 @@ const SHAPES = {
     [15, 1],
     [[1, 2], [0, 3], [-1, 3], [-2, 2], [-3, 2]],
   ),
+  // Standing, head down in the long grass, chewing.
+  graze: shape(
+    [
+      "..BBBBBBBBBBB.......", ".BBBBBBBBBBBBB......", ".BBBBBBBBBBBBBB.A.A.", ".BBBBBBBBBBBBBBBBBB.",
+      "..LLLLLLLLLLLBBBEBB.", "..BB..BB...BB.BBBLN.", "..BB..BB...BB..LL...", "..BB..BB...BB.......",
+      "..LL..LL...LL.......",
+    ],
+    [16, 4],
+    [[1, 1], [0, 0], [0, -1], [1, -2], [2, -2]],
+  ),
   // The tabby's hand-drawn loaf, mirrored to face right; other cats get stripes/patches from their pattern.
   loaf: shape(
     [
@@ -189,6 +199,10 @@ export interface Personality {
   idle: "front" | "loaf";
   /** Loses its mind over butterflies. */
   chaser: boolean;
+  /** Rolls back and forth on its back on the terrazzo in front of the gate. */
+  gateRoller: boolean;
+  /** Eats the long grass. */
+  grazer: boolean;
 }
 
 const SKINS: Record<string, Skin> = {
@@ -227,12 +241,13 @@ export const TABBY_COLORS = { G: hex("#8e8e94"), D: hex("#5c5c64"), L: hex("#c8c
 
 export const CALICO_COLORS = { W: hex("#f4f0e8"), s: hex("#cfc9bd"), O: hex("#e0883a"), K: hex("#2e2a28"), P: hex("#e89a9a"), E: hex("#3e4a26") };
 const SHADOW = hex("#34522a");
+const GRASS_BLADE = hex("#8cbc58");
 const DUST = hex("#b89a72");
 const Z_COLOR = hex("#f0ece0");
 
 export const PERSONALITIES: Record<"calico" | "tabby", Personality> = {
-  calico: { name: "calico", speed: 15, energy: 0.8, hunt: 0.9, sleepy: 0.35, groom: 0.7, idle: "front", chaser: true },
-  tabby: { name: "tabby", speed: 11, energy: 0.45, hunt: 0.55, sleepy: 0.85, groom: 0.9, idle: "loaf", chaser: false },
+  calico: { name: "calico", speed: 15, energy: 0.8, hunt: 0.9, sleepy: 0.35, groom: 0.7, idle: "front", chaser: true, gateRoller: true, grazer: false },
+  tabby: { name: "tabby", speed: 11, energy: 0.45, hunt: 0.55, sleepy: 0.85, groom: 0.9, idle: "loaf", chaser: false, gateRoller: false, grazer: true },
 };
 
 // ---- Activities -----------------------------------------------------------------
@@ -243,7 +258,8 @@ type Activity =
   | { kind: "groom"; until: number }
   | { kind: "walk"; x: number; y: number; gait: "walk" | "trot" | "stalk"; then: (() => void) | null }
   | { kind: "sleep"; until: number; belly: boolean }
-  | { kind: "roll"; until: number }
+  | { kind: "roll"; until: number; backAndForth?: boolean }
+  | { kind: "graze"; tuft: Tuft; until: number }
   | { kind: "stare"; at: () => { x: number; y: number } | null; until: number; chatter: boolean }
   | { kind: "wiggle"; bird: Bird; until: number }
   | { kind: "leap"; x0: number; y0: number; x1: number; y1: number; height: number; dur: number; then: () => void }
@@ -354,8 +370,13 @@ export class Cat {
     const moth = w.moths[0];
     const butterfly = this.readyToChase ? w.butterflies.find((b) => !b.gone) : undefined;
 
+    const edible = p.grazer ? w.tufts.filter((t) => t.length > 0.6) : [];
+    const tuft = edible.length ? edible[Math.floor(w.random() * edible.length)] : undefined;
+
     const options: [number, () => void][] = [
       [butterfly ? 3 : 0, () => this.chaseButterfly(butterfly!)],
+      [p.gateRoller ? (day ? 0.8 : 0.25) : 0, () => this.goGateRoll()],
+      [tuft ? (night ? 0.3 : 0.8) : 0, () => this.goGraze(tuft!)],
       [1, () => this.sit()],
       [1.3 * p.energy, () => this.wander()],
       [0.9 * p.groom, () => this.groom()],
@@ -387,6 +408,25 @@ export class Cat {
     this.walkTo(spot.x + this.rand(-6, 6), spot.y + this.rand(-2, 2), "walk", () => {
       const relaxed = this.world.random() < 0.45;
       this.set({ kind: "sleep", until: this.rand(15, 40), belly: relaxed });
+    });
+  }
+
+  /** The calico's favourite: flop on the terrazzo in front of the gate and roll back and forth. */
+  private goGateRoll() {
+    const gate = this.world.spots.gate;
+    this.walkTo(gate.x + this.rand(-6, 6), gate.y + this.rand(0, 3), "walk", () =>
+      this.set({ kind: "roll", until: this.rand(6, 12), backAndForth: true }),
+    );
+  }
+
+  /** The tabby wanders over to a tuft of long grass and eats some. */
+  private goGraze(tuft: Tuft) {
+    const side = this.x < tuft.x ? -1 : 1;
+    // Stand so the mouth (about 8px ahead of centre) is at the tuft.
+    this.walkTo(tuft.x + side * 8, tuft.y, "walk", () => {
+      this.facing = -side;
+      this.set({ kind: "graze", tuft, until: this.rand(5, 10) });
+      this.activityThen = () => this.groom();
     });
   }
 
@@ -537,7 +577,15 @@ export class Cat {
       case "loaf":
       case "groom":
       case "roll":
-        if (a.kind === "roll" && this.world.random() < dt * 4) this.world.dust(this.x + this.rand(-6, 6), this.y, 1);
+        if (a.kind === "roll" && a.backAndForth) {
+          this.facing = Math.floor(this.clock * 2.5) % 4 < 2 ? 1 : -1; // over one way, then back the other
+        } else if (a.kind === "roll" && this.world.random() < dt * 4) {
+          this.world.dust(this.x + this.rand(-6, 6), this.y, 1);
+        }
+        if (this.clock > a.until) this.finish();
+        break;
+      case "graze":
+        a.tuft.length = Math.max(0.35, a.tuft.length - dt * 0.05); // nibbling it down
         if (this.clock > a.until) this.finish();
         break;
       case "sleep":
@@ -731,9 +779,16 @@ export class Cat {
       case "sleep":
         return { shape: a.belly && this.clock > 5 ? SHAPES.bellyA : SHAPES.curl, closed: true };
       case "roll": {
+        if (a.backAndForth) {
+          // Side, belly up (paws paddling), other side, belly up… eyes half shut with bliss.
+          const f = Math.floor(this.clock * 2.5) % 4;
+          return { shape: f % 2 === 0 ? SHAPES.sideLie : Math.floor(t * 6) % 2 ? SHAPES.bellyA : SHAPES.bellyB, closed: true };
+        }
         const f = Math.floor(this.clock * 4) % 4;
         return { shape: f === 0 || f === 2 ? SHAPES.sideLie : f === 1 ? SHAPES.bellyA : SHAPES.bellyB, closed: false };
       }
+      case "graze":
+        return { shape: SHAPES.graze, closed: Math.floor(t * 3) % 2 === 0 };
       case "stare":
         return { shape: SHAPES.lookUp, closed: false };
       case "wiggle":
@@ -829,6 +884,15 @@ export class Cat {
     const [hx, hy] = this.headAt(s);
     const a = this.activity;
     if (a.kind === "sleep") this.drawZ(px, paint, t, hx, hy);
+    if (a.kind === "graze") {
+      // A blade of grass poking out of the mouth, bobbing as she chews.
+      const chew = Math.floor(t * 4) % 2;
+      const blade = paint(GRASS_BLADE);
+      const mx = left + col(17);
+      px.set(mx, top + 6 + chew, blade);
+      px.set(mx + (flip ? -1 : 1), top + 7 + chew, blade);
+      px.set(mx + (flip ? -2 : 2), top + 7, blade);
+    }
     if (a.kind === "stare" && a.chatter && Math.floor(t * 8) % 2) {
       // Chattering at the bird: little marks by the mouth.
       const mx = hx + this.facing * 4;
